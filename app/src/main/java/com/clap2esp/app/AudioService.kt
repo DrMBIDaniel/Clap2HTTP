@@ -28,7 +28,7 @@ class AudioService : Service() {
         )
             .setContentTitle("Clap2ESP")
             .setContentText("Listening for claps...")
-            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+            .setSmallIcon(android.R.drawable.ic_menu_info_details)
             .build()
 
 
