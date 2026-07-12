@@ -17,6 +17,17 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
+        val startButton = findViewById<Button>(R.id.startButton)
+
+startButton.setOnClickListener {
+
+    val serviceIntent = Intent(
+        this,
+        AudioService::class.java
+    )
+
+    startService(serviceIntent)
+}
 
         checkMicrophonePermission()
     }
