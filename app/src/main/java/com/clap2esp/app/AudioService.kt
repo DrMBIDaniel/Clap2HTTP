@@ -49,6 +49,10 @@ class AudioService : Service() {
 
 
     private fun startListening() {
+        
+        if (isRecording) {
+    return
+}
 
         val bufferSize = AudioRecord.getMinBufferSize(
             44100,
