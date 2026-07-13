@@ -14,22 +14,38 @@ enum class ClapType {
 class ClapDetector {
 
 
-    private val threshold = 12000
+    // Чувствительность
+    private val threshold = 11000
 
 
-    private val doubleClapInterval = 800L
+
+    // Минимальная задержка между хлопками
+    private val minInterval = 120L
 
 
-    private val minClapInterval = 150L
+
+    // Максимальное окно двойного хлопка
+    private val doubleWindow = 800L
+
+
+
+    private var lastDetection = 0L
+
 
 
     private var firstClapTime = 0L
 
 
-    private var waitingSecondClap = false
+    private var waitingSecond = false
 
 
-    private var lastDetectionTime = 0L
+
+    // анализ формы сигнала
+
+    private var previousAmplitude = 0
+
+
+    private var peakStrength = 0
 
 
 
@@ -40,16 +56,16 @@ class ClapDetector {
 
 
 
-        for (sample in buffer) {
+        for(sample in buffer) {
 
 
-            val amplitude =
+            val value =
                 abs(sample.toInt())
 
 
-            if (amplitude > maxAmplitude) {
+            if(value > maxAmplitude) {
 
-                maxAmplitude = amplitude
+                maxAmplitude = value
 
             }
 
@@ -57,12 +73,20 @@ class ClapDetector {
 
 
 
-        val currentTime =
+
+        val now =
             System.currentTimeMillis()
 
 
 
-        if (maxAmplitude < threshold) {
+
+        /*
+        Фильтр слишком тихих звуков
+        */
+
+        if(maxAmplitude < threshold) {
+
+            previousAmplitude = maxAmplitude
 
             return ClapType.NONE
 
@@ -70,9 +94,43 @@ class ClapDetector {
 
 
 
-        if (
-            currentTime - lastDetectionTime
-            < minClapInterval
+
+
+        /*
+        Анализ резкости импульса
+
+        Хлопок обычно имеет быстрый скачок
+        */
+
+
+        val jump =
+            maxAmplitude - previousAmplitude
+
+
+
+        previousAmplitude =
+            maxAmplitude
+
+
+
+
+        if(jump < 3000) {
+
+
+            return ClapType.NONE
+
+        }
+
+
+
+
+        /*
+        Защита от дребезга
+        */
+
+
+        if(
+            now - lastDetection < minInterval
         ) {
 
             return ClapType.NONE
@@ -81,24 +139,29 @@ class ClapDetector {
 
 
 
-        lastDetectionTime = currentTime
+        lastDetection = now
 
 
 
 
 
-        if (!waitingSecondClap) {
+        /*
+        Первый хлопок
+        */
 
 
-            waitingSecondClap = true
+        if(!waitingSecond) {
 
 
-            firstClapTime = currentTime
+            waitingSecond = true
+
+
+            firstClapTime = now
 
 
 
             Logger.log(
-                "First clap amplitude=$maxAmplitude"
+                "Possible clap amplitude=$maxAmplitude"
             )
 
 
@@ -111,21 +174,26 @@ class ClapDetector {
 
 
 
+        /*
+        Второй хлопок
+        */
+
+
         val delay =
-            currentTime - firstClapTime
+            now - firstClapTime
 
 
 
 
-        if (delay <= doubleClapInterval) {
+        if(delay <= doubleWindow) {
 
 
-            waitingSecondClap = false
+            waitingSecond = false
 
 
 
             Logger.log(
-                "Double clap delay=${delay}ms"
+                "DOUBLE CLAP v5 delay=${delay}ms"
             )
 
 
@@ -136,7 +204,10 @@ class ClapDetector {
 
 
 
-        firstClapTime = currentTime
+
+
+        firstClapTime = now
+
 
 
         return ClapType.NONE
@@ -150,20 +221,21 @@ class ClapDetector {
     fun checkSingleClapTimeout(): ClapType {
 
 
-        if (
-            waitingSecondClap &&
+        if(
+            waitingSecond &&
             System.currentTimeMillis()
-            - firstClapTime > doubleClapInterval
+            - firstClapTime > doubleWindow
         ) {
 
 
-            waitingSecondClap = false
+            waitingSecond = false
 
 
 
             Logger.log(
-                "Single clap detected"
+                "SINGLE CLAP v5"
             )
+
 
 
             return ClapType.SINGLE_CLAP
@@ -171,8 +243,10 @@ class ClapDetector {
         }
 
 
+
         return ClapType.NONE
 
     }
+
 
 }
