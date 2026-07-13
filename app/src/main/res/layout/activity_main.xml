@@ -61,4 +61,25 @@
     
         android:layout_marginTop="20dp"/>
 
+    <TextView
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:text="──────────── LOG ────────────"
+    android:textSize="16sp"
+    android:layout_marginTop="30dp"/>
+
+<ScrollView
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_weight="1"
+    android:layout_marginTop="10dp">
+
+    <TextView
+        android:id="@+id/logText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Waiting..."
+        android:textSize="14sp"/>
+</ScrollView>
+
 </LinearLayout>
