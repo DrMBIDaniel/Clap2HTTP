@@ -6,25 +6,26 @@ import kotlin.math.abs
 class ClapDetector {
 
 
-    // Минимальная громкость для возможного хлопка
-    private val threshold = 18000
+    // Чувствительность микрофона
+    // Было 18000, уменьшаем для теста рядом с телефоном
+    private val threshold = 12000
 
 
-    // Минимальная задержка между любыми срабатываниями
-    private val cooldown = 400L
+    // Защита от слишком частых срабатываний
+    private val cooldown = 250L
 
 
-    // Максимальное время между двумя хлопками
+    // Время ожидания второго хлопка
     private val doubleClapDelay = 700L
 
 
     private var lastClapTime = 0L
 
 
-    private var firstClapWaiting = false
+    private var waitingForSecondClap = false
 
 
-    private var doubleClapStartTime = 0L
+    private var firstClapTime = 0L
 
 
 
@@ -34,6 +35,7 @@ class ClapDetector {
         var maxAmplitude = 0
 
 
+        // Находим самый громкий момент в аудиобуфере
         for (sample in buffer) {
 
             val amplitude = abs(sample.toInt())
@@ -42,7 +44,6 @@ class ClapDetector {
             if (amplitude > maxAmplitude) {
                 maxAmplitude = amplitude
             }
-
         }
 
 
@@ -51,21 +52,14 @@ class ClapDetector {
 
 
 
-        /*
-        Если звук недостаточно громкий,
-        это не хлопок
-         */
-
+        // Слишком тихий звук
         if (maxAmplitude < threshold) {
             return false
         }
 
 
 
-        /*
-        Защита от одного длинного громкого звука
-         */
-
+        // Защита от повторного срабатывания
         if (currentTime - lastClapTime < cooldown) {
             return false
         }
@@ -76,58 +70,47 @@ class ClapDetector {
 
 
 
-        /*
-        Первый хлопок
-         */
-
-        if (!firstClapWaiting) {
+        // Первый хлопок
+        if (!waitingForSecondClap) {
 
 
-            firstClapWaiting = true
+            waitingForSecondClap = true
 
-            doubleClapStartTime = currentTime
+            firstClapTime = currentTime
 
 
             Logger.log(
-                "First clap detected"
+                "First clap detected amplitude=$maxAmplitude"
             )
 
 
             return true
-
         }
 
 
 
-        /*
-        Второй хлопок
-         */
-
+        // Второй хлопок
         if (
-            currentTime - doubleClapStartTime <= doubleClapDelay
+            currentTime - firstClapTime <= doubleClapDelay
         ) {
 
 
             Logger.log(
-                "Double clap detected"
+                "Double clap detected amplitude=$maxAmplitude"
             )
 
 
-            firstClapWaiting = false
+            waitingForSecondClap = false
 
 
             return true
-
         }
 
 
 
-        /*
-        Если второй хлопок слишком поздний,
-        начинаем заново
-         */
+        // Слишком поздно, начинаем новый цикл
 
-        doubleClapStartTime = currentTime
+        firstClapTime = currentTime
 
 
         return true
