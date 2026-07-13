@@ -4,26 +4,18 @@ import kotlin.math.abs
 
 class ClapDetector {
 
+    // Минимальная громкость
+    private val threshold = 18000
 
-    // Порог громкости хлопка
-    private val threshold = 15000
+    // Минимальная пауза между хлопками
+    private val cooldown = 600L
 
-
-    // Защита от повторных срабатываний
     private var lastClapTime = 0L
-
-    private val cooldown = 500L
-
-
-    // Чтобы не писать в лог один и тот же шум постоянно
-    private var lastLoggedAmplitude = 0
 
 
     fun detect(buffer: ShortArray): Boolean {
 
-
         var maxAmplitude = 0
-
 
         for (sample in buffer) {
 
@@ -35,20 +27,14 @@ class ClapDetector {
         }
 
 
-        // Показываем только заметные изменения громкости
-        if (maxAmplitude > threshold / 2 &&
-            maxAmplitude != lastLoggedAmplitude) {
-
-            Logger.log(
-                "Sound peak: $maxAmplitude"
-            )
-
-            lastLoggedAmplitude = maxAmplitude
-        }
-
-
         val currentTime = System.currentTimeMillis()
 
+
+        /*
+        Проверяем:
+        1. звук достаточно громкий
+        2. прошло время после прошлого хлопка
+         */
 
         if (
             maxAmplitude > threshold &&
@@ -59,7 +45,7 @@ class ClapDetector {
 
 
             Logger.log(
-                "CLAP DETECTED"
+                "CLAP DETECTED amplitude=$maxAmplitude"
             )
 
 
