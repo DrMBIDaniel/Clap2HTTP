@@ -18,18 +18,13 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
-       
+
         Logger.log("MainActivity created")
 
         checkMicrophonePermission()
 
-        val startButton = findViewById<Button>(
-            R.id.startButton
-        )
-
-        val stopButton = findViewById<Button>(
-            R.id.stopButton
-        )
+        val startButton = findViewById<Button>(R.id.startButton)
+        val stopButton = findViewById<Button>(R.id.stopButton)
 
         startButton.setOnClickListener {
 
@@ -42,9 +37,8 @@ class MainActivity : AppCompatActivity() {
                 this,
                 serviceIntent
             )
-            
+
             Logger.log("Start button pressed")
-            
         }
 
         stopButton.setOnClickListener {
@@ -58,7 +52,6 @@ class MainActivity : AppCompatActivity() {
 
             Logger.log("Stop button pressed")
         }
-        
     }
 
     private fun checkMicrophonePermission() {
@@ -67,14 +60,14 @@ class MainActivity : AppCompatActivity() {
             ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.RECORD_AUDIO
-            ) != PackageManager.PERMISSION_GRANTED
-        )
-        
-        Logger.log("Microphone permission granted")
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
 
-        Logger.log("Requesting microphone permission")
-        
-        {
+            Logger.log("Microphone permission granted")
+
+        } else {
+
+            Logger.log("Requesting microphone permission")
 
             ActivityCompat.requestPermissions(
                 this,
