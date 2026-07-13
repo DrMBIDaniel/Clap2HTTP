@@ -9,15 +9,29 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.startForegroundService
+import android.widget.TextView
 
 class MainActivity : AppCompatActivity() {
 
     private val microphonePermissionCode = 100
+    private lateinit var logText: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
+
+        logText = findViewById(R.id.logText)
+
+Logger.setOnLogChanged {
+
+    runOnUiThread {
+
+        logText.text = Logger.getLogs()
+
+    }
+
+}
 
         Logger.log("MainActivity created")
 
