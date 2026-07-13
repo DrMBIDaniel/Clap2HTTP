@@ -1,252 +1,107 @@
 package com.clap2esp.app
 
-import kotlin.math.abs
-
-
 enum class ClapType {
     NONE,
     SINGLE_CLAP,
     DOUBLE_CLAP
 }
 
-
-
 class ClapDetector {
 
-
-    // Чувствительность
-    private val threshold = 11000
-
-
-
-    // Минимальная задержка между хлопками
-    private val minInterval = 120L
-
-
-
-    // Максимальное окно двойного хлопка
-    private val doubleWindow = 800L
-
-
-
-    private var lastDetection = 0L
-
-
-
-    private var firstClapTime = 0L
-
+    private val analyzer = SignalAnalyzer()
 
     private var waitingSecond = false
 
+    private var firstClapTime = 0L
 
+    private val doubleWindow = 800L
 
-    // анализ формы сигнала
+    private val minGap = 120L
 
-    private var previousAmplitude = 0
-
-
-    private var peakStrength = 0
-
-
+    private var lastAccepted = 0L
 
     fun detect(buffer: ShortArray): ClapType {
 
+        val signal = analyzer.analyze(buffer)
 
-        var maxAmplitude = 0
+        var score = 0
 
+        // 1. Громкость
+        if (signal.peak > 10000)
+            score += 30
 
+        // 2. Средняя энергия
+        if (signal.rms < signal.peak * 0.45)
+            score += 20
 
-        for(sample in buffer) {
+        // 3. Высокое количество переходов через ноль
+        if (signal.zeroCrossings > 140)
+            score += 20
 
+        // 4. Быстрый фронт
+        if (signal.attack < 30)
+            score += 15
 
-            val value =
-                abs(sample.toInt())
+        // 5. Быстрое затухание
+        if (signal.decay < 40)
+            score += 15
 
-
-            if(value > maxAmplitude) {
-
-                maxAmplitude = value
-
-            }
-
-        }
-
-
-
-
-        val now =
-            System.currentTimeMillis()
-
-
-
-
-        /*
-        Фильтр слишком тихих звуков
-        */
-
-        if(maxAmplitude < threshold) {
-
-            previousAmplitude = maxAmplitude
-
+        if (score < 70)
             return ClapType.NONE
 
-        }
+        Logger.log(
+            "Peak=${signal.peak}  RMS=${signal.rms.toInt()}  Score=$score"
+        )
 
+        val now = System.currentTimeMillis()
 
-
-
-
-        /*
-        Анализ резкости импульса
-
-        Хлопок обычно имеет быстрый скачок
-        */
-
-
-        val jump =
-            maxAmplitude - previousAmplitude
-
-
-
-        previousAmplitude =
-            maxAmplitude
-
-
-
-
-        if(jump < 3000) {
-
-
+        if (now - lastAccepted < minGap)
             return ClapType.NONE
 
-        }
+        lastAccepted = now
 
-
-
-
-        /*
-        Защита от дребезга
-        */
-
-
-        if(
-            now - lastDetection < minInterval
-        ) {
-
-            return ClapType.NONE
-
-        }
-
-
-
-        lastDetection = now
-
-
-
-
-
-        /*
-        Первый хлопок
-        */
-
-
-        if(!waitingSecond) {
-
+        if (!waitingSecond) {
 
             waitingSecond = true
 
-
             firstClapTime = now
 
-
-
-            Logger.log(
-                "Possible clap amplitude=$maxAmplitude"
-            )
-
-
+            Logger.log("Possible clap")
 
             return ClapType.NONE
-
         }
 
+        val delay = now - firstClapTime
 
-
-
-
-        /*
-        Второй хлопок
-        */
-
-
-        val delay =
-            now - firstClapTime
-
-
-
-
-        if(delay <= doubleWindow) {
-
+        if (delay <= doubleWindow) {
 
             waitingSecond = false
 
-
-
-            Logger.log(
-                "DOUBLE CLAP v5 delay=${delay}ms"
-            )
-
-
+            Logger.log("DOUBLE delay=${delay}ms")
 
             return ClapType.DOUBLE_CLAP
-
         }
-
-
-
-
 
         firstClapTime = now
 
-
-
         return ClapType.NONE
-
     }
-
-
-
-
 
     fun checkSingleClapTimeout(): ClapType {
 
-
-        if(
+        if (
             waitingSecond &&
-            System.currentTimeMillis()
-            - firstClapTime > doubleWindow
+            System.currentTimeMillis() - firstClapTime > doubleWindow
         ) {
-
 
             waitingSecond = false
 
-
-
-            Logger.log(
-                "SINGLE CLAP v5"
-            )
-
-
+            Logger.log("SINGLE")
 
             return ClapType.SINGLE_CLAP
-
         }
 
-
-
         return ClapType.NONE
-
     }
-
 
 }
