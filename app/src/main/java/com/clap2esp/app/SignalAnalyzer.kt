@@ -3,100 +3,152 @@ package com.clap2esp.app
 import kotlin.math.abs
 import kotlin.math.sqrt
 
+
 class SignalAnalyzer {
 
-    fun analyze(buffer: ShortArray): SignalFeatures {
+
+    fun analyze(
+        buffer: ShortArray
+    ): SignalFeatures {
+
 
         var peak = 0
 
-        var energy = 0.0
+        var sumSquares = 0.0
 
         var zeroCrossings = 0
 
-        var attack = 0
 
-        var decay = 0
+        var highFrequencyEnergy = 0.0
 
-        var impulseWidth = 0
+        var totalEnergy = 0.0
 
-        var previous = 0
 
-        var reachedPeak = false
-
-        var peakIndex = 0
-
-        var lastAboveThreshold = 0
-
-        val threshold = 2500
 
         for (i in buffer.indices) {
 
-            val sample = abs(buffer[i].toInt())
 
-            if (sample > peak) {
+            val sample =
+                buffer[i].toInt()
 
-                peak = sample
 
-                peakIndex = i
+            val amplitude =
+                abs(sample)
+
+
+
+            // Максимальная амплитуда
+            if (amplitude > peak) {
+
+                peak = amplitude
 
             }
 
-            energy += sample * sample.toDouble()
+
+
+            // RMS энергия
+
+            sumSquares +=
+                sample * sample.toDouble()
+
+
+
+            // Zero crossing
 
             if (i > 0) {
 
+
                 if (
-                    (buffer[i] >= 0 && buffer[i - 1] < 0) ||
-                    (buffer[i] < 0 && buffer[i - 1] >= 0)
+                    (buffer[i - 1] < 0 &&
+                     buffer[i] >= 0)
+                    ||
+                    (buffer[i - 1] >= 0 &&
+                     buffer[i] < 0)
                 ) {
+
                     zeroCrossings++
-                }
-
-            }
-
-            if (!reachedPeak) {
-
-                if (sample > previous) {
-
-                    attack++
-
-                } else {
-
-                    reachedPeak = true
-
-                }
-
-            } else {
-
-                if (sample < previous) {
-
-                    decay++
 
                 }
 
             }
 
-            if (sample > threshold) {
 
-                lastAboveThreshold = i
+
+            /*
+             Частотное приближение:
+
+             быстрые изменения сигнала
+             считаем высокими частотами
+            */
+
+            if (i > 1) {
+
+
+                val difference =
+                    abs(
+                        buffer[i].toInt()
+                        -
+                        buffer[i - 1].toInt()
+                    )
+
+
+                highFrequencyEnergy += difference
 
             }
 
-            previous = sample
+
+
+            totalEnergy += abs(sample)
 
         }
 
-        impulseWidth = lastAboveThreshold - peakIndex
 
-        if (impulseWidth < 0) {
 
-            impulseWidth = 0
+        val rms =
+            sqrt(
+                sumSquares /
+                buffer.size
+            )
 
-        }
 
-        val rms = sqrt(
-            energy / buffer.size
-        )
+
+        val highFrequencyRatio =
+            if(totalEnergy > 0)
+            {
+
+                (
+                    highFrequencyEnergy /
+                    totalEnergy
+                )
+
+            }
+            else
+            {
+                0.0
+            }
+
+
+
+        /*
+        Пока используем
+        простые оценки времени
+        */
+
+
+        val attack =
+            estimateAttack(buffer)
+
+
+
+        val decay =
+            estimateDecay(buffer)
+
+
+
+        val impulseWidth =
+            buffer.size
+
+
 
         return SignalFeatures(
 
@@ -110,9 +162,84 @@ class SignalAnalyzer {
 
             decay = decay,
 
-            impulseWidth = impulseWidth
+            impulseWidth = impulseWidth,
+
+            highFrequencyRatio =
+                highFrequencyRatio
 
         )
+
+    }
+
+
+
+
+
+    private fun estimateAttack(
+        buffer: ShortArray
+    ): Int {
+
+
+        val threshold =
+            5000
+
+
+        for(i in buffer.indices)
+        {
+
+            if(
+                abs(buffer[i].toInt())
+                >
+                threshold
+            )
+            {
+
+                return i
+
+            }
+
+        }
+
+
+        return buffer.size
+
+    }
+
+
+
+
+
+    private fun estimateDecay(
+        buffer: ShortArray
+    ): Int {
+
+
+        val threshold =
+            3000
+
+
+
+        for(
+            i in buffer.indices.reversed()
+        )
+        {
+
+
+            if(
+                abs(buffer[i].toInt())
+                >
+                threshold
+            )
+            {
+
+                return buffer.size - i
+
+            }
+
+        }
+
+
+        return buffer.size
 
     }
 
