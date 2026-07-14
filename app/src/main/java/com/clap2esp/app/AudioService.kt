@@ -1,7 +1,9 @@
 package com.clap2esp.app
 
-
-import android.app.*
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
 import android.content.Intent
 import android.media.AudioFormat
 import android.media.AudioRecord
@@ -11,31 +13,24 @@ import android.os.IBinder
 import android.util.Log
 
 
-
 class AudioService : Service() {
 
 
     private var audioRecord: AudioRecord? = null
 
-
     private var isRecording = false
-
 
 
     private val signalAnalyzer =
         SignalAnalyzer()
 
 
-
     private val clapDetector =
         ClapDetector()
 
 
-
     private val channelId =
         "Clap2ESP_Channel"
-
-
 
 
 
@@ -52,7 +47,6 @@ class AudioService : Service() {
 
 
         createNotificationChannel()
-
 
 
         val notification =
@@ -72,7 +66,6 @@ class AudioService : Service() {
                 .build()
 
 
-
         startForeground(
             1,
             notification
@@ -83,9 +76,7 @@ class AudioService : Service() {
             "Foreground service started"
         )
 
-
     }
-
 
 
 
@@ -114,15 +105,11 @@ class AudioService : Service() {
 
 
 
-
-
     private fun startListening() {
 
 
-        if(isRecording){
-
+        if (isRecording) {
             return
-
         }
 
 
@@ -136,29 +123,18 @@ class AudioService : Service() {
 
 
 
-
-
         audioRecord =
             AudioRecord(
-
                 MediaRecorder.AudioSource.MIC,
-
                 44100,
-
                 AudioFormat.CHANNEL_IN_MONO,
-
                 AudioFormat.ENCODING_PCM_16BIT,
-
                 bufferSize
-
             )
 
 
 
-
-
         audioRecord?.startRecording()
-
 
 
         isRecording = true
@@ -173,9 +149,6 @@ class AudioService : Service() {
 
 
 
-
-
-
         Thread {
 
 
@@ -184,10 +157,7 @@ class AudioService : Service() {
 
 
 
-
-
-            while(isRecording){
-
+            while(isRecording) {
 
 
                 val read =
@@ -199,24 +169,11 @@ class AudioService : Service() {
 
 
 
-
-
-                if(
+                if (
                     read != null &&
                     read > 0
-                ){
+                ) {
 
-
-
-                    /*
-                       Новый этап v5:
-
-                       RAW звук
-                       ->
-                       анализ признаков
-                       ->
-                       детектор
-                    */
 
 
                     val features =
@@ -226,13 +183,11 @@ class AudioService : Service() {
 
 
 
-
-
                     when(
                         clapDetector.detect(
                             features
                         )
-                    ){
+                    ) {
 
 
 
@@ -242,7 +197,6 @@ class AudioService : Service() {
                             Logger.log(
                                 "DOUBLE CLAP EVENT"
                             )
-
 
 
                             sendBroadcast(
@@ -259,17 +213,14 @@ class AudioService : Service() {
 
                         }
 
-
                     }
-
-
 
 
 
 
                     when(
                         clapDetector.checkSingleClapTimeout()
-                    ){
+                    ) {
 
 
 
@@ -287,7 +238,6 @@ class AudioService : Service() {
                                 )
                             )
 
-
                         }
 
 
@@ -296,10 +246,7 @@ class AudioService : Service() {
 
                         }
 
-
-
                     }
-
 
 
 
@@ -310,11 +257,7 @@ class AudioService : Service() {
             }
 
 
-
-
-
         }.start()
-
 
 
     }
@@ -326,25 +269,20 @@ class AudioService : Service() {
 
 
 
+    private fun createNotificationChannel() {
 
-    private fun createNotificationChannel(){
 
-
-        if(
+        if (
             Build.VERSION.SDK_INT >=
             Build.VERSION_CODES.O
-        ){
+        ) {
 
 
             val channel =
                 NotificationChannel(
-
                     channelId,
-
                     "Clap2ESP Listener",
-
                     NotificationManager.IMPORTANCE_LOW
-
                 )
 
 
@@ -355,13 +293,12 @@ class AudioService : Service() {
                 )
 
 
+
             manager.createNotificationChannel(
                 channel
             )
 
-
         }
-
 
 
     }
@@ -374,8 +311,7 @@ class AudioService : Service() {
 
 
 
-    override fun onDestroy(){
-
+    override fun onDestroy() {
 
 
         Logger.log(
@@ -389,12 +325,9 @@ class AudioService : Service() {
 
         try {
 
-
             audioRecord?.stop()
 
-
-
-        }catch(e:Exception){
+        } catch(e: Exception) {
 
 
             Log.e(
@@ -402,9 +335,7 @@ class AudioService : Service() {
                 "Stop error"
             )
 
-
         }
-
 
 
 
@@ -416,7 +347,6 @@ class AudioService : Service() {
 
 
         super.onDestroy()
-
 
     }
 
@@ -431,11 +361,9 @@ class AudioService : Service() {
         intent: Intent?
     ): IBinder? {
 
-
         return null
 
     }
-
 
 
 }
