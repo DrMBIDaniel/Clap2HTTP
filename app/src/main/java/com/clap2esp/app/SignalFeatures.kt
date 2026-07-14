@@ -3,26 +3,33 @@ package com.clap2esp.app
 
 data class SignalFeatures(
 
-    // Максимальная громкость сигнала
-    val amplitude: Int,
+    // Максимальная амплитуда сигнала
+    val peak: Int,
 
 
-    // Сколько раз сигнал пересекает ноль
-    // Используется для отличия шума и речи
-    val zeroCrossingRate: Int,
+    // Средняя энергия сигнала
+    val rms: Double,
 
 
-    // Доля высоких частот
-    // Пока будет заполняться анализатором
-    val highFrequencyRatio: Float,
+    // Количество переходов через ноль
+    val zeroCrossings: Int,
 
 
-    // Время резкого подъёма звука
-    // В миллисекундах
-    val attackTime: Long,
+    // Скорость нарастания сигнала
+    // меньше = больше похоже на хлопок
+    val attack: Long,
 
 
-    // Длина звукового импульса
-    val duration: Long
+    // Скорость затухания
+    val decay: Long,
+
+
+    // Длина импульса
+    val impulseWidth: Long,
+
+
+    // Частотный показатель
+    // пока используется как запас под FFT
+    val highFrequencyRatio: Double = 0.0
 
 )
