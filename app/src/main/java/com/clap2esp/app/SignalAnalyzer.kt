@@ -24,6 +24,15 @@ class SignalAnalyzer {
         var totalEnergy = 0.0
 
 
+        var attackIndex = buffer.size
+
+        var lastStrongIndex = 0
+
+
+
+        val attackThreshold = 6000
+
+
 
         for (i in buffer.indices) {
 
@@ -37,7 +46,8 @@ class SignalAnalyzer {
 
 
 
-            // Максимальная амплитуда
+            // Peak
+
             if (amplitude > peak) {
 
                 peak = amplitude
@@ -46,7 +56,7 @@ class SignalAnalyzer {
 
 
 
-            // RMS энергия
+            // RMS
 
             sumSquares +=
                 sample * sample.toDouble()
@@ -58,12 +68,14 @@ class SignalAnalyzer {
             if (i > 0) {
 
 
+                val previous =
+                    buffer[i - 1]
+
+
                 if (
-                    (buffer[i - 1] < 0 &&
-                     buffer[i] >= 0)
+                    (previous < 0 && buffer[i] >= 0)
                     ||
-                    (buffer[i - 1] >= 0 &&
-                     buffer[i] < 0)
+                    (previous >= 0 && buffer[i] < 0)
                 ) {
 
                     zeroCrossings++
@@ -75,13 +87,11 @@ class SignalAnalyzer {
 
 
             /*
-             Частотное приближение:
-
-             быстрые изменения сигнала
-             считаем высокими частотами
+            Быстрые изменения сигнала.
+            Хлопок имеет много таких изменений.
             */
 
-            if (i > 1) {
+            if (i > 0) {
 
 
                 val difference =
@@ -98,7 +108,29 @@ class SignalAnalyzer {
 
 
 
-            totalEnergy += abs(sample)
+            totalEnergy += amplitude
+
+
+
+            // начало импульса
+
+            if (
+                amplitude > attackThreshold
+                &&
+                attackIndex == buffer.size
+            ) {
+
+                attackIndex = i
+
+            }
+
+
+            if (amplitude > 3000) {
+
+                lastStrongIndex = i
+
+            }
+
 
         }
 
@@ -113,61 +145,91 @@ class SignalAnalyzer {
 
 
         val highFrequencyRatio =
-            if(totalEnergy > 0)
-            {
+            if (totalEnergy > 0) {
 
-                (
-                    highFrequencyEnergy /
-                    totalEnergy
-                )
+                highFrequencyEnergy /
+                        totalEnergy
 
-            }
-            else
-            {
+            } else {
+
                 0.0
+
             }
+
 
 
 
         /*
-        Пока используем
-        простые оценки времени
+        Первый вариант оценки
+        "похожести на хлопок"
+
+        Хлопок:
+        - высокая амплитуда
+        - быстрый фронт
+        - много ВЧ
+        - короткий импульс
         */
 
 
-        val attack =
-            estimateAttack(buffer)
-
-
-
-        val decay =
-            estimateDecay(buffer)
-
-
-
         val impulseWidth =
-            buffer.size
+            if (lastStrongIndex > attackIndex) {
+
+                lastStrongIndex - attackIndex
+
+            } else {
+
+                buffer.size
+
+            }
+
+
+
+
+        val clapFrequencyScore =
+            calculateClapScore(
+                peak,
+                highFrequencyRatio,
+                zeroCrossings,
+                impulseWidth
+            )
+
 
 
 
         return SignalFeatures(
 
+
             peak = peak,
+
 
             rms = rms,
 
-            zeroCrossings = zeroCrossings,
 
-            attack = attack,
+            zeroCrossings =
+                zeroCrossings,
 
-            decay = decay,
 
-            impulseWidth = impulseWidth,
+            attack =
+                attackIndex,
+
+
+            decay =
+                buffer.size - lastStrongIndex,
+
+
+            impulseWidth =
+                impulseWidth,
+
 
             highFrequencyRatio =
-                highFrequencyRatio
+                highFrequencyRatio,
+
+
+            clapFrequencyScore =
+                clapFrequencyScore
 
         )
+
 
     }
 
@@ -175,72 +237,71 @@ class SignalAnalyzer {
 
 
 
-    private fun estimateAttack(
-        buffer: ShortArray
-    ): Int {
 
 
-        val threshold =
-            5000
+    private fun calculateClapScore(
+
+        peak: Int,
+
+        highFrequencyRatio: Double,
+
+        zeroCrossings: Int,
+
+        impulseWidth: Int
+
+    ): Double {
 
 
-        for(i in buffer.indices)
-        {
 
-            if(
-                abs(buffer[i].toInt())
-                >
-                threshold
-            )
-            {
+        var score = 0.0
 
-                return i
 
-            }
+
+        // громкость
+
+        if (peak > 10000) {
+
+            score += 0.25
 
         }
 
 
-        return buffer.size
 
-    }
+        // резкие высокие частоты
 
+        if (highFrequencyRatio > 0.35) {
 
-
-
-
-    private fun estimateDecay(
-        buffer: ShortArray
-    ): Int {
-
-
-        val threshold =
-            3000
-
-
-
-        for(
-            i in buffer.indices.reversed()
-        )
-        {
-
-
-            if(
-                abs(buffer[i].toInt())
-                >
-                threshold
-            )
-            {
-
-                return buffer.size - i
-
-            }
+            score += 0.35
 
         }
 
 
-        return buffer.size
+
+        // много быстрых переходов
+
+        if (zeroCrossings > 30) {
+
+            score += 0.20
+
+        }
+
+
+
+        // короткий импульс
+
+        if (
+            impulseWidth < 500
+        ) {
+
+            score += 0.20
+
+        }
+
+
+
+        return score
 
     }
+
 
 }
