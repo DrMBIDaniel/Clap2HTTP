@@ -11,115 +11,151 @@ class SignalAnalyzer {
         var sumSquares = 0.0
         var zeroCrossings = 0
 
-        var diffEnergy = 0.0
-        var totalEnergy = 0.0
+        var attackIndex = buffer.size
+        var lastStrongIndex = 0
 
-        var attack = -1
-        var lastStrong = -1
-
-        val threshold = 5000
+        val attackThreshold = 6000
 
         for (i in buffer.indices) {
 
             val sample = buffer[i].toInt()
             val amplitude = abs(sample)
 
-            if (amplitude > peak)
+            if (amplitude > peak) {
                 peak = amplitude
+            }
 
             sumSquares += sample * sample.toDouble()
 
-            totalEnergy += amplitude
-
             if (i > 0) {
 
-                if ((buffer[i - 1] < 0 && buffer[i] >= 0) ||
-                    (buffer[i - 1] >= 0 && buffer[i] < 0))
-                    zeroCrossings++
+                val previous = buffer[i - 1]
 
-                diffEnergy += abs(sample - buffer[i - 1].toInt())
+                if (
+                    (previous < 0 && buffer[i] >= 0) ||
+                    (previous >= 0 && buffer[i] < 0)
+                ) {
+                    zeroCrossings++
+                }
             }
 
-            if (amplitude > threshold) {
+            if (
+                amplitude > attackThreshold &&
+                attackIndex == buffer.size
+            ) {
+                attackIndex = i
+            }
 
-                if (attack == -1)
-                    attack = i
-
-                lastStrong = i
+            if (amplitude > 3000) {
+                lastStrongIndex = i
             }
         }
-
-        if (attack == -1)
-            attack = buffer.size
-
-        if (lastStrong == -1)
-            lastStrong = attack
 
         val rms =
             sqrt(sumSquares / buffer.size)
 
-        val impulseWidth =
-            (lastStrong - attack).coerceAtLeast(0)
+        val spectrum =
+            FFT.magnitude(buffer)
 
-        val decay =
-            buffer.size - lastStrong
+        var lowEnergy = 0.0
+        var midEnergy = 0.0
+        var highEnergy = 0.0
+        var totalSpectrumEnergy = 0.0
+
+        val sampleRate = 44100.0
+
+        for (i in spectrum.indices) {
+
+            val freq =
+                i * sampleRate / buffer.size
+
+            val value =
+                spectrum[i]
+
+            totalSpectrumEnergy += value
+
+            when {
+
+                freq < 500 -> {
+                    lowEnergy += value
+                }
+
+                freq < 2000 -> {
+                    midEnergy += value
+                }
+
+                else -> {
+                    highEnergy += value
+                }
+            }
+        }
 
         val highFrequencyRatio =
-            if (totalEnergy > 0.0)
-                diffEnergy / totalEnergy
-            else
+            if (totalSpectrumEnergy > 0.0) {
+                highEnergy / totalSpectrumEnergy
+            } else {
                 0.0
+            }
+
+        val impulseWidth =
+            if (lastStrongIndex > attackIndex) {
+                lastStrongIndex - attackIndex
+            } else {
+                buffer.size
+            }
 
         val clapFrequencyScore =
-            calculateScore(
+            calculateClapScore(
                 peak,
-                rms,
-                zeroCrossings,
                 highFrequencyRatio,
-                attack,
+                zeroCrossings,
                 impulseWidth
             )
 
         return SignalFeatures(
+
             peak = peak,
+
             rms = rms,
+
             zeroCrossings = zeroCrossings,
-            attack = attack,
-            decay = decay,
+
+            attack = attackIndex,
+
+            decay = buffer.size - lastStrongIndex,
+
             impulseWidth = impulseWidth,
+
             highFrequencyRatio = highFrequencyRatio,
+
             clapFrequencyScore = clapFrequencyScore
         )
     }
 
-    private fun calculateScore(
+    private fun calculateClapScore(
         peak: Int,
-        rms: Double,
-        zeroCrossings: Int,
         highFrequencyRatio: Double,
-        attack: Int,
+        zeroCrossings: Int,
         impulseWidth: Int
     ): Double {
 
         var score = 0.0
 
-        if (peak > 9000)
+        if (peak > 8000) {
+            score += 0.25
+        }
+
+        if (highFrequencyRatio > 0.18) {
+            score += 0.35
+        }
+
+        if (zeroCrossings > 20) {
             score += 0.20
+        }
 
-        if (rms > 1800)
-            score += 0.15
-
-        if (highFrequencyRatio > 0.45)
-            score += 0.30
-
-        if (zeroCrossings > 45)
-            score += 0.15
-
-        if (attack < 120)
-            score += 0.10
-
-        if (impulseWidth < 250)
-            score += 0.10
+        if (impulseWidth < 450) {
+            score += 0.20
+        }
 
         return score.coerceIn(0.0, 1.0)
     }
