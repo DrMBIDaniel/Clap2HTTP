@@ -154,16 +154,33 @@ class ClapDetector {
     }
 
 
-
-
-
-
-
-
-
     private fun isClap(
-        f: SignalFeatures
-    ): Boolean {
+    f: SignalFeatures
+): Boolean {
+
+
+    Logger.log(
+        "FEATURES peak=${f.peak} rms=${f.rms.toInt()} freq=${f.clapFrequencyScore} width=${f.impulseWidth} attack=${f.attack}"
+    )
+
+
+    if (f.peak < 7000) {
+
+        return false
+
+    }
+
+
+    if (f.rms < 1000) {
+
+        return false
+
+    }
+
+
+    return true
+
+}
 
 
 
