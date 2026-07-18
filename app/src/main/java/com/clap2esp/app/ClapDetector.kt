@@ -182,3 +182,4 @@ private fun isClap(
 
     return true
 }
+}
