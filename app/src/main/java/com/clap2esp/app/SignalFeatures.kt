@@ -25,5 +25,8 @@ data class SignalFeatures(
     val midBandEnergy: Double,
 
     // Энергия выше 2000 Гц
-    val highBandEnergy: Double
+    val highBandEnergy: Double,
+
+    // Частота максимального спектрального пика
+    val spectralPeak: Double
 )
