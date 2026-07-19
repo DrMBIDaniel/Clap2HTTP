@@ -63,6 +63,7 @@ class SignalAnalyzer {
         var totalSpectrumEnergy = 0.0
 
         val sampleRate = 44100.0
+        var spectralPeak = 0.0
 
         for (i in spectrum.indices) {
 
@@ -71,6 +72,10 @@ class SignalAnalyzer {
 
             val value =
                 spectrum[i]
+            
+            if (value > spectralPeak) {
+    spectralPeak = value
+}
 
             totalSpectrumEnergy += value
 
@@ -134,8 +139,11 @@ class SignalAnalyzer {
 
     midBandEnergy = midEnergy,
 
-    highBandEnergy = highEnergy
+   highBandEnergy = highEnergy,
 
+spectralPeak = spectralPeak
+
+)
 )
     }
 
