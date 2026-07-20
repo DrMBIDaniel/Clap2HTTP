@@ -141,38 +141,10 @@ class SignalAnalyzer {
 
     highBandEnergy = highEnergy,
 
-    spectralPeak = spectralPeak
+    spectralPeak = spectralPeak,
+
+    spectralCentroid = 0.0,
+
+    spectralFlatness = 0.0
 
 )
-
-}
-
-private fun calculateClapScore(
-    peak: Int,
-    highFrequencyRatio: Double,
-    zeroCrossings: Int,
-    impulseWidth: Int
-): Double {
-
-    var score = 0.0
-
-    if (peak > 8000) {
-        score += 0.25
-    }
-
-    if (highFrequencyRatio > 0.18) {
-        score += 0.35
-    }
-
-    if (zeroCrossings > 20) {
-        score += 0.20
-    }
-
-    if (impulseWidth < 450) {
-        score += 0.20
-    }
-
-    return score.coerceIn(0.0, 1.0)
-}
-
-}
