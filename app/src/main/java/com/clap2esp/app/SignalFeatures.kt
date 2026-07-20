@@ -18,15 +18,16 @@ data class SignalFeatures(
 
     val clapFrequencyScore: Double,
 
-    // Энергия до 500 Гц
     val lowBandEnergy: Double,
 
-    // Энергия 500–2000 Гц
     val midBandEnergy: Double,
 
-    // Энергия выше 2000 Гц
     val highBandEnergy: Double,
 
-    // Частота максимального спектрального пика
-    val spectralPeak: Double
+    val spectralPeak: Double,
+
+    val spectralCentroid: Double,
+
+    val spectralFlatness: Double
+
 )
