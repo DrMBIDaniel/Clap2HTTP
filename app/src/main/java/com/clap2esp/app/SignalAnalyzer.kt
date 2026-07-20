@@ -28,7 +28,6 @@ class SignalAnalyzer {
             sumSquares += sample * sample.toDouble()
 
             if (i > 0) {
-
                 val previous = buffer[i - 1]
 
                 if (
@@ -60,24 +59,27 @@ class SignalAnalyzer {
         var lowEnergy = 0.0
         var midEnergy = 0.0
         var highEnergy = 0.0
+
         var totalSpectrumEnergy = 0.0
 
-        val sampleRate = 44100.0
         var spectralPeak = 0.0
+        var spectralPeakIndex = 0
+
+        val sampleRate = 44100.0
 
         for (i in spectrum.indices) {
 
-            val freq =
-                i * sampleRate / buffer.size
+            val value = spectrum[i]
 
-            val value =
-                spectrum[i]
-            
             if (value > spectralPeak) {
-    spectralPeak = value
-}
+                spectralPeak = value
+                spectralPeakIndex = i
+            }
 
             totalSpectrumEnergy += value
+
+            val freq =
+                i * sampleRate / buffer.size
 
             when {
 
@@ -117,34 +119,73 @@ class SignalAnalyzer {
                 impulseWidth
             )
 
-     return SignalFeatures(
+        val spectralCentroid =
+            spectralPeakIndex * sampleRate / buffer.size
 
-    peak = peak,
+        val spectralFlatness =
+            if (totalSpectrumEnergy > 0.0) {
+                highEnergy / totalSpectrumEnergy
+            } else {
+                0.0
+            }
 
-    rms = rms,
+        return SignalFeatures(
 
-    zeroCrossings = zeroCrossings,
+            peak = peak,
 
-    attack = attackIndex,
+            rms = rms,
 
-    decay = buffer.size - lastStrongIndex,
+            zeroCrossings = zeroCrossings,
 
-    impulseWidth = impulseWidth,
+            attack = attackIndex,
 
-    highFrequencyRatio = highFrequencyRatio,
+            decay = buffer.size - lastStrongIndex,
 
-    clapFrequencyScore = clapFrequencyScore,
+            impulseWidth = impulseWidth,
 
-    lowBandEnergy = lowEnergy,
+            highFrequencyRatio = highFrequencyRatio,
 
-    midBandEnergy = midEnergy,
+            clapFrequencyScore = clapFrequencyScore,
 
-    highBandEnergy = highEnergy,
+            lowBandEnergy = lowEnergy,
 
-    spectralPeak = spectralPeak,
+            midBandEnergy = midEnergy,
 
-    spectralCentroid = 0.0,
+            highBandEnergy = highEnergy,
 
-    spectralFlatness = 0.0
+            spectralPeak = spectralPeak,
 
-)
+            spectralCentroid = spectralCentroid,
+
+            spectralFlatness = spectralFlatness
+        )
+    }
+
+    private fun calculateClapScore(
+        peak: Int,
+        highFrequencyRatio: Double,
+        zeroCrossings: Int,
+        impulseWidth: Int
+    ): Double {
+
+        var score = 0.0
+
+        if (peak > 8000) {
+            score += 0.25
+        }
+
+        if (highFrequencyRatio > 0.18) {
+            score += 0.35
+        }
+
+        if (zeroCrossings > 20) {
+            score += 0.20
+        }
+
+        if (impulseWidth < 450) {
+            score += 0.20
+        }
+
+        return score.coerceIn(0.0, 1.0)
+    }
+}
