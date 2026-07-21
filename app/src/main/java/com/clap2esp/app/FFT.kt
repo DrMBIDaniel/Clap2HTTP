@@ -1,6 +1,8 @@
 package com.clap2esp.app
 
+import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.ln
 import kotlin.math.sin
 import kotlin.math.sqrt
 
@@ -13,25 +15,125 @@ object FFT {
         val real = DoubleArray(n)
         val imag = DoubleArray(n)
 
+        // Hann Window
         for (i in 0 until n) {
-            real[i] = buffer[i].toDouble()
+
+            val window =
+                0.5 * (
+                    1.0 -
+                    cos(2.0 * PI * i / (n - 1))
+                )
+
+            real[i] =
+                buffer[i].toDouble() * window
         }
 
         fft(real, imag)
 
-        val result = DoubleArray(n / 2)
+        val spectrum = DoubleArray(n / 2)
 
-        for (i in result.indices) {
-            result[i] = sqrt(
-                real[i] * real[i] +
-                imag[i] * imag[i]
-            )
+        var max = 0.0
+
+        for (i in spectrum.indices) {
+
+            val value =
+                sqrt(
+                    real[i] * real[i] +
+                    imag[i] * imag[i]
+                )
+
+            spectrum[i] = value
+
+            if (value > max) {
+                max = value
+            }
         }
 
-        return result
+        // Нормализация
+        if (max > 0.0) {
+
+            for (i in spectrum.indices) {
+                spectrum[i] /= max
+            }
+        }
+
+        return spectrum
     }
 
-    private fun fft(real: DoubleArray, imag: DoubleArray) {
+    fun spectralPeak(spectrum: DoubleArray): Double {
+
+        var peak = 0.0
+
+        for (v in spectrum) {
+
+            if (v > peak) {
+                peak = v
+            }
+        }
+
+        return peak
+    }
+
+    fun spectralCentroid(
+        spectrum: DoubleArray,
+        sampleRate: Double
+    ): Double {
+
+        var weighted = 0.0
+        var total = 0.0
+
+        for (i in spectrum.indices) {
+
+            val freq =
+                i * sampleRate / (spectrum.size * 2)
+
+            weighted +=
+                freq * spectrum[i]
+
+            total +=
+                spectrum[i]
+        }
+
+        if (total == 0.0)
+            return 0.0
+
+        return weighted / total
+    }
+
+    fun spectralFlatness(
+        spectrum: DoubleArray
+    ): Double {
+
+        var geo = 0.0
+        var arith = 0.0
+
+        for (v in spectrum) {
+
+            geo +=
+                ln(v + 1e-12)
+
+            arith +=
+                v
+        }
+
+        geo =
+            kotlin.math.exp(
+                geo / spectrum.size
+            )
+
+        arith /=
+            spectrum.size
+
+        if (arith == 0.0)
+            return 0.0
+
+        return geo / arith
+    }
+
+    private fun fft(
+        real: DoubleArray,
+        imag: DoubleArray
+    ) {
 
         val n = real.size
 
@@ -65,62 +167,62 @@ object FFT {
         while (len <= n) {
 
             val angle =
-                -2.0 * Math.PI / len
+                -2.0 * PI / len
 
-            val wlenCos =
+            val wLenCos =
                 cos(angle)
 
-            val wlenSin =
+            val wLenSin =
                 sin(angle)
 
-            var i = 0
+            var start = 0
 
-            while (i < n) {
+            while (start < n) {
 
                 var wCos = 1.0
                 var wSin = 0.0
 
                 for (k in 0 until len / 2) {
 
-                    val uReal =
-                        real[i + k]
+                    val evenReal =
+                        real[start + k]
 
-                    val uImag =
-                        imag[i + k]
+                    val evenImag =
+                        imag[start + k]
 
-                    val vReal =
-                        real[i + k + len / 2] * wCos -
-                        imag[i + k + len / 2] * wSin
+                    val oddReal =
+                        real[start + k + len / 2] * wCos -
+                        imag[start + k + len / 2] * wSin
 
-                    val vImag =
-                        real[i + k + len / 2] * wSin +
-                        imag[i + k + len / 2] * wCos
+                    val oddImag =
+                        real[start + k + len / 2] * wSin +
+                        imag[start + k + len / 2] * wCos
 
-                    real[i + k] =
-                        uReal + vReal
+                    real[start + k] =
+                        evenReal + oddReal
 
-                    imag[i + k] =
-                        uImag + vImag
+                    imag[start + k] =
+                        evenImag + oddImag
 
-                    real[i + k + len / 2] =
-                        uReal - vReal
+                    real[start + k + len / 2] =
+                        evenReal - oddReal
 
-                    imag[i + k + len / 2] =
-                        uImag - vImag
+                    imag[start + k + len / 2] =
+                        evenImag - oddImag
 
                     val nextCos =
-                        wCos * wlenCos -
-                        wSin * wlenSin
+                        wCos * wLenCos -
+                        wSin * wLenSin
 
                     wSin =
-                        wCos * wlenSin +
-                        wSin * wlenCos
+                        wCos * wLenSin +
+                        wSin * wLenCos
 
                     wCos =
                         nextCos
                 }
 
-                i += len
+                start += len
             }
 
             len = len shl 1
