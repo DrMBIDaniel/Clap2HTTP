@@ -25,7 +25,7 @@ class ClapDetector {
             firstClapTime = now
 
             Logger.log(
-                "Candidate peak=${features.peak} score=${features.clapFrequencyScore}"
+                "Candidate peak=${features.peak} spectral=${features.spectralPeak.toInt()} score=${"%.2f".format(features.clapFrequencyScore)}"
             )
 
             return ClapType.NONE
@@ -72,7 +72,16 @@ class ClapDetector {
     private fun isClap(f: SignalFeatures): Boolean {
 
         Logger.log(
-            "peak=${f.peak} rms=${f.rms.toInt()} zc=${f.zeroCrossings} attack=${f.attack} width=${f.impulseWidth} hf=${"%.2f".format(f.highFrequencyRatio)} score=${"%.2f".format(f.clapFrequencyScore)}"
+            "peak=${f.peak} " +
+            "rms=${f.rms.toInt()} " +
+            "hf=${"%.2f".format(f.highFrequencyRatio)} " +
+            "low=${"%.2f".format(f.lowBandEnergy)} " +
+            "mid=${"%.2f".format(f.midBandEnergy)} " +
+            "high=${"%.2f".format(f.highBandEnergy)} " +
+            "spPeak=${"%.2f".format(f.spectralPeak)} " +
+            "centroid=${"%.2f".format(f.spectralCentroid)} " +
+            "flat=${"%.2f".format(f.spectralFlatness)} " +
+            "width=${f.impulseWidth}"
         )
 
         var score = 0
@@ -86,7 +95,19 @@ class ClapDetector {
         if (f.highFrequencyRatio > 0.18)
             score++
 
-        if (f.zeroCrossings > 20)
+        if (f.highBandEnergy > f.lowBandEnergy)
+            score++
+
+        if (f.midBandEnergy > f.lowBandEnergy * 0.60)
+            score++
+
+        if (f.spectralPeak > 1000)
+            score++
+
+        if (f.spectralCentroid > 1500)
+            score++
+
+        if (f.spectralFlatness > 0.15)
             score++
 
         if (f.impulseWidth < 450)
@@ -100,6 +121,6 @@ class ClapDetector {
 
         Logger.log("Decision score=$score")
 
-        return score >= 5
+        return score >= 7
     }
 }
