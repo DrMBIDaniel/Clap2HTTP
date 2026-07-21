@@ -1,6 +1,8 @@
 package com.clap2esp.app
 
-class ClapDetector {
+class ClapDetector(
+    private val noiseEstimator: NoiseEstimator
+) {
 
     private var waitingSecondClap = false
     private var pendingSingle = false
@@ -24,9 +26,7 @@ class ClapDetector {
             pendingSingle = true
             firstClapTime = now
 
-            Logger.log(
-                "Candidate peak=${features.peak} spectral=${features.spectralPeak.toInt()} score=${"%.2f".format(features.clapFrequencyScore)}"
-            )
+            Logger.log("CLAP CANDIDATE")
 
             return ClapType.NONE
         }
@@ -54,9 +54,10 @@ class ClapDetector {
             return ClapType.NONE
         }
 
-        val now = System.currentTimeMillis()
-
-        if (pendingSingle && now - firstClapTime > singleTimeout) {
+        if (
+            pendingSingle &&
+            System.currentTimeMillis() - firstClapTime > singleTimeout
+        ) {
 
             waitingSecondClap = false
             pendingSingle = false
@@ -71,43 +72,29 @@ class ClapDetector {
 
     private fun isClap(f: SignalFeatures): Boolean {
 
-        Logger.log(
-            "peak=${f.peak} " +
-            "rms=${f.rms.toInt()} " +
-            "hf=${"%.2f".format(f.highFrequencyRatio)} " +
-            "low=${"%.2f".format(f.lowBandEnergy)} " +
-            "mid=${"%.2f".format(f.midBandEnergy)} " +
-            "high=${"%.2f".format(f.highBandEnergy)} " +
-            "spPeak=${"%.2f".format(f.spectralPeak)} " +
-            "centroid=${"%.2f".format(f.spectralCentroid)} " +
-            "flat=${"%.2f".format(f.spectralFlatness)} " +
-            "width=${f.impulseWidth}"
-        )
+        if (!noiseEstimator.isInitialized()) {
+            return false
+        }
+
+        val rmsLimit =
+            noiseEstimator.noiseRms() * 2.2
+
+        val peakLimit =
+            noiseEstimator.noisePeak() * 2.0
 
         var score = 0
 
-        if (f.peak > 7000)
+        if (f.rms > rmsLimit)
             score++
 
-        if (f.rms > 900)
+        if (f.peak > peakLimit)
             score++
 
-        if (f.highFrequencyRatio > 0.18)
+        if (f.highFrequencyRatio >
+            noiseEstimator.noiseHighRatio() + 0.08)
             score++
 
-        if (f.highBandEnergy > f.lowBandEnergy)
-            score++
-
-        if (f.midBandEnergy > f.lowBandEnergy * 0.60)
-            score++
-
-        if (f.spectralPeak > 1000)
-            score++
-
-        if (f.spectralCentroid > 1500)
-            score++
-
-        if (f.spectralFlatness > 0.15)
+        if (f.zeroCrossings > 20)
             score++
 
         if (f.impulseWidth < 450)
@@ -119,8 +106,18 @@ class ClapDetector {
         if (f.clapFrequencyScore > 0.55)
             score++
 
-        Logger.log("Decision score=$score")
+        if (f.highBandEnergy > f.lowBandEnergy)
+            score++
 
-        return score >= 7
+        if (f.spectralFlatness > 0.18)
+            score++
+
+        Logger.log(
+            "NoiseRMS=${noiseEstimator.noiseRms().toInt()} " +
+            "RMS=${f.rms.toInt()} " +
+            "Score=$score"
+        )
+
+        return score >= 6
     }
 }
