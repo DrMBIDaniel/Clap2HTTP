@@ -12,78 +12,39 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 
-
 class AudioService : Service() {
 
-
     private var audioRecord: AudioRecord? = null
-
     private var isRecording = false
 
+    private val signalAnalyzer = SignalAnalyzer()
 
-    private val signalAnalyzer =
-        SignalAnalyzer()
-
-
-    private val clapDetector =
-        ClapDetector()
     private val noiseEstimator = NoiseEstimator()
 
+    private val clapDetector = ClapDetector(
+        noiseEstimator
+    )
 
-    private val channelId =
-        "Clap2ESP_Channel"
-
-
-
-
+    private val channelId = "Clap2ESP_Channel"
 
     override fun onCreate() {
-
         super.onCreate()
 
-
-        Logger.log(
-            "AudioService created"
-        )
-
+        Logger.log("AudioService created")
 
         createNotificationChannel()
 
-
         val notification =
-            Notification.Builder(
-                this,
-                channelId
-            )
-                .setContentTitle(
-                    "Clap2ESP"
-                )
-                .setContentText(
-                    "Listening for claps..."
-                )
-                .setSmallIcon(
-                    android.R.drawable.ic_menu_info_details
-                )
+            Notification.Builder(this, channelId)
+                .setContentTitle("Clap2ESP")
+                .setContentText("Listening for claps...")
+                .setSmallIcon(android.R.drawable.ic_menu_info_details)
                 .build()
 
+        startForeground(1, notification)
 
-        startForeground(
-            1,
-            notification
-        )
-
-
-        Logger.log(
-            "Foreground service started"
-        )
-
+        Logger.log("Foreground service started")
     }
-
-
-
-
-
-
 
     override fun onStartCommand(
         intent: Intent?,
@@ -91,29 +52,14 @@ class AudioService : Service() {
         startId: Int
     ): Int {
 
-
         startListening()
 
-
         return START_NOT_STICKY
-
     }
-
-
-
-
-
-
-
 
     private fun startListening() {
 
-
-        if (isRecording) {
-            return
-        }
-
-
+        if (isRecording) return
 
         val bufferSize =
             AudioRecord.getMinBufferSize(
@@ -121,8 +67,6 @@ class AudioService : Service() {
                 AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT
             )
-
-
 
         audioRecord =
             AudioRecord(
@@ -133,151 +77,66 @@ class AudioService : Service() {
                 bufferSize
             )
 
-
-
         audioRecord?.startRecording()
-
 
         isRecording = true
 
-
-
-        Logger.log(
-            "Microphone recording started"
-        )
-
-
-
-
+        Logger.log("Microphone recording started")
 
         Thread {
 
+            val buffer = ShortArray(bufferSize)
 
-            val buffer =
-                ShortArray(bufferSize)
-
-
-
-            while(isRecording) {
-
+            while (isRecording) {
 
                 val read =
                     audioRecord?.read(
                         buffer,
                         0,
                         buffer.size
-                    )
+                    ) ?: 0
 
+                if (read <= 0) continue
 
+                val features =
+                    signalAnalyzer.analyze(buffer)
 
-                if (
-                    read != null &&
-                    read > 0
-                ) {
+                noiseEstimator.update(features)
 
+                when (clapDetector.detect(features)) {
 
+                    ClapType.DOUBLE_CLAP -> {
 
-                    val features =
-                        signalAnalyzer.analyze(
-                            buffer
+                        Logger.log("DOUBLE CLAP EVENT")
+
+                        sendBroadcast(
+                            Intent("DOUBLE_CLAP")
                         )
-noiseEstimator.update(features)
-
-
-                    when(
-                        clapDetector.detect(
-                            features
-                        )
-                    ) {
-
-
-
-                        ClapType.DOUBLE_CLAP -> {
-
-
-                            Logger.log(
-                                "DOUBLE CLAP EVENT"
-                            )
-
-
-                            sendBroadcast(
-                                Intent(
-                                    "DOUBLE_CLAP"
-                                )
-                            )
-
-                        }
-
-
-
-                        else -> {
-
-                        }
-
                     }
 
-
-
-
-                    when(
-                        clapDetector.checkSingleClapTimeout()
-                    ) {
-
-
-
-                        ClapType.SINGLE_CLAP -> {
-
-
-                            Logger.log(
-                                "SINGLE CLAP EVENT"
-                            )
-
-
-                            sendBroadcast(
-                                Intent(
-                                    "SINGLE_CLAP"
-                                )
-                            )
-
-                        }
-
-
-
-                        else -> {
-
-                        }
-
-                    }
-
-
-
+                    else -> {}
                 }
 
+                when (clapDetector.checkSingleClapTimeout()) {
 
+                    ClapType.SINGLE_CLAP -> {
 
+                        Logger.log("SINGLE CLAP EVENT")
+
+                        sendBroadcast(
+                            Intent("SINGLE_CLAP")
+                        )
+                    }
+
+                    else -> {}
+                }
             }
-
-
         }.start()
-
-
     }
-
-
-
-
-
-
-
 
     private fun createNotificationChannel() {
 
-
-        if (
-            Build.VERSION.SDK_INT >=
-            Build.VERSION_CODES.O
-        ) {
-
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 
             val channel =
                 NotificationChannel(
@@ -286,85 +145,34 @@ noiseEstimator.update(features)
                     NotificationManager.IMPORTANCE_LOW
                 )
 
-
-
             val manager =
                 getSystemService(
                     NotificationManager::class.java
                 )
 
-
-
-            manager.createNotificationChannel(
-                channel
-            )
-
+            manager.createNotificationChannel(channel)
         }
-
-
     }
-
-
-
-
-
-
-
-
 
     override fun onDestroy() {
 
-
-        Logger.log(
-            "AudioService stopped"
-        )
-
+        Logger.log("AudioService stopped")
 
         isRecording = false
 
-
-
         try {
-
             audioRecord?.stop()
-
-        } catch(e: Exception) {
-
-
-            Log.e(
-                "CLAP",
-                "Stop error"
-            )
-
+        } catch (e: Exception) {
+            Log.e("CLAP", "Stop error", e)
         }
 
-
-
         audioRecord?.release()
-
-
         audioRecord = null
 
-
-
         super.onDestroy()
-
     }
 
-
-
-
-
-
-
-
-    override fun onBind(
-        intent: Intent?
-    ): IBinder? {
-
+    override fun onBind(intent: Intent?): IBinder? {
         return null
-
     }
-
-
 }
