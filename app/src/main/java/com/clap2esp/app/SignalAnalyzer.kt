@@ -28,6 +28,7 @@ class SignalAnalyzer {
             sumSquares += sample * sample.toDouble()
 
             if (i > 0) {
+
                 val previous = buffer[i - 1]
 
                 if (
@@ -56,38 +57,27 @@ class SignalAnalyzer {
         val spectrum =
             FFT.magnitude(buffer)
 
+        val sampleRate = 44100.0
+
         var lowEnergy = 0.0
         var midEnergy = 0.0
         var highEnergy = 0.0
 
-        var totalSpectrumEnergy = 0.0
-
-        var spectralPeak = 0.0
-        var spectralPeakIndex = 0
-
-        val sampleRate = 44100.0
-
         for (i in spectrum.indices) {
 
-            val value = spectrum[i]
-
-            if (value > spectralPeak) {
-                spectralPeak = value
-                spectralPeakIndex = i
-            }
-
-            totalSpectrumEnergy += value
-
             val freq =
-                i * sampleRate / buffer.size
+                i * sampleRate / (spectrum.size * 2)
+
+            val value =
+                spectrum[i]
 
             when {
 
-                freq < 500 -> {
+                freq < 500.0 -> {
                     lowEnergy += value
                 }
 
-                freq < 2000 -> {
+                freq < 2000.0 -> {
                     midEnergy += value
                 }
 
@@ -97,12 +87,29 @@ class SignalAnalyzer {
             }
         }
 
+        val totalEnergy =
+            lowEnergy + midEnergy + highEnergy
+
         val highFrequencyRatio =
-            if (totalSpectrumEnergy > 0.0) {
-                highEnergy / totalSpectrumEnergy
+            if (totalEnergy > 0.0) {
+                highEnergy / totalEnergy
             } else {
                 0.0
             }
+
+        val spectralPeak =
+            FFT.spectralPeak(spectrum)
+
+        val spectralCentroid =
+            FFT.spectralCentroid(
+                spectrum,
+                sampleRate
+            )
+
+        val spectralFlatness =
+            FFT.spectralFlatness(
+                spectrum
+            )
 
         val impulseWidth =
             if (lastStrongIndex > attackIndex) {
@@ -118,16 +125,6 @@ class SignalAnalyzer {
                 zeroCrossings,
                 impulseWidth
             )
-
-        val spectralCentroid =
-            spectralPeakIndex * sampleRate / buffer.size
-
-        val spectralFlatness =
-            if (totalSpectrumEnergy > 0.0) {
-                highEnergy / totalSpectrumEnergy
-            } else {
-                0.0
-            }
 
         return SignalFeatures(
 
