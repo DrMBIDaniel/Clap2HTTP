@@ -26,7 +26,9 @@ class ClapDetector(
             pendingSingle = true
             firstClapTime = now
 
-            Logger.log("CLAP CANDIDATE")
+            Logger.log(
+                "CLAP CANDIDATE peak=${features.peak}"
+            )
 
             return ClapType.NONE
         }
@@ -82,16 +84,18 @@ class ClapDetector(
         val peakLimit =
             noiseEstimator.noisePeak() * 2.0
 
-        var score = 0
+        val highRatioLimit =
+            noiseEstimator.noiseHighRatio() + 0.08
 
-        if (f.rms > rmsLimit)
-            score++
+        var score = 0
 
         if (f.peak > peakLimit)
             score++
 
-        if (f.highFrequencyRatio >
-            noiseEstimator.noiseHighRatio() + 0.08)
+        if (f.rms > rmsLimit)
+            score++
+
+        if (f.highFrequencyRatio > highRatioLimit)
             score++
 
         if (f.zeroCrossings > 20)
@@ -109,15 +113,24 @@ class ClapDetector(
         if (f.highBandEnergy > f.lowBandEnergy)
             score++
 
+        if (f.spectralPeak > 1000.0)
+            score++
+
+        if (f.spectralCentroid > 1500.0)
+            score++
+
         if (f.spectralFlatness > 0.18)
             score++
 
         Logger.log(
+            "NoisePeak=${noiseEstimator.noisePeak().toInt()} " +
+            "Peak=${f.peak} " +
             "NoiseRMS=${noiseEstimator.noiseRms().toInt()} " +
             "RMS=${f.rms.toInt()} " +
+            "HF=${"%.2f".format(f.highFrequencyRatio)} " +
             "Score=$score"
         )
 
-        return score >= 6
+        return score >= 7
     }
 }
