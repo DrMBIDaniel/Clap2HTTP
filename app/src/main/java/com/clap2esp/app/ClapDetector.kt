@@ -15,6 +15,8 @@ class ClapDetector(
 
     fun detect(features: SignalFeatures): ClapType {
 
+        adaptiveThreshold.update(features)
+
         if (!isClap(features)) {
             return ClapType.NONE
         }
@@ -27,7 +29,9 @@ class ClapDetector(
             pendingSingle = true
             firstClapTime = now
 
-            Logger.log("CLAP score=${score(features)}")
+            Logger.log(
+                "CLAP CANDIDATE threshold=${adaptiveThreshold.currentThreshold().toInt()}"
+            )
 
             return ClapType.NONE
         }
@@ -51,9 +55,8 @@ class ClapDetector(
 
     fun checkSingleClapTimeout(): ClapType {
 
-        if (!waitingSecondClap) {
+        if (!waitingSecondClap)
             return ClapType.NONE
-        }
 
         if (
             pendingSingle &&
@@ -73,52 +76,52 @@ class ClapDetector(
 
     private fun isClap(f: SignalFeatures): Boolean {
 
-        if (!noiseEstimator.isInitialized()) {
+        if (!noiseEstimator.isInitialized())
             return false
-        }
 
-        val value = score(f)
+        val dynamicThreshold =
+            adaptiveThreshold.currentThreshold()
 
-        Logger.log("WeightedScore=$value")
+        var score = 0
 
-        return value >= adaptiveThreshold.currentThreshold()
-    }
-
-    private fun score(f: SignalFeatures): Double {
-
-        var score = 0.0
-
-        if (f.peak > noiseEstimator.noisePeak() * 2.0)
-            score += 2.5
+        if (f.peak > dynamicThreshold)
+            score++
 
         if (f.rms > noiseEstimator.noiseRms() * 2.2)
-            score += 2.0
+            score++
 
         if (f.highFrequencyRatio >
             noiseEstimator.noiseHighRatio() + 0.08)
-            score += 2.0
+            score++
 
         if (f.highBandEnergy > f.lowBandEnergy)
-            score += 1.5
+            score++
 
-        if (f.spectralPeak > 1000.0)
-            score += 1.5
+        if (f.spectralPeak > 1800.0)
+            score++
 
-        if (f.spectralCentroid > 1800.0)
-            score += 1.5
+        if (f.spectralCentroid > 1200.0)
+            score++
 
         if (f.spectralFlatness > 0.18)
-            score += 1.5
+            score++
 
         if (f.impulseWidth < 450)
-            score += 1.5
+            score++
 
         if (f.attack < 200)
-            score += 1.0
+            score++
+
+        if (f.zeroCrossings > 20)
+            score++
 
         if (f.clapFrequencyScore > 0.55)
-            score += 2.0
+            score++
 
-        return score
+        Logger.log(
+            "Peak=${f.peak} Thr=${dynamicThreshold.toInt()} Score=$score"
+        )
+
+        return score >= 7
     }
 }
