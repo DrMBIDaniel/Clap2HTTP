@@ -28,6 +28,9 @@ data class SignalFeatures(
 
     val spectralCentroid: Double,
 
-    val spectralFlatness: Double
+    val spectralFlatness: Double,
 
+    val spectralFlux: Double,
+
+    val spectralRollOff: Double
 )
