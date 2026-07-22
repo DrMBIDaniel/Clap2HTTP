@@ -30,16 +30,18 @@ class ClapDetector(
         if (!clapDetected) {
             return ClapType.NONE
         }
-        
+
         TrainingManager.add(
     TrainingSample(
+        peak = features.peak,
         rms = features.rms,
-        peak = features.peak.toDouble(),
         highRatio = features.highFrequencyRatio,
-        zeroCrossings = features.zeroCrossings.toDouble(),
-        centroid = features.spectralCentroid,
-        flatness = features.spectralFlatness,
-        label = true
+        zeroCrossings = features.zeroCrossings,
+        impulseWidth = features.impulseWidth,
+        spectralCentroid = features.spectralCentroid,
+        spectralFlatness = features.spectralFlatness,
+        spectralFlux = features.spectralFlux,
+        spectralRollOff = features.spectralRollOff
     )
 )
 
@@ -100,18 +102,6 @@ class ClapDetector(
 
         if (!noiseEstimator.isInitialized())
             return 0
-
-        TrainingManager.add(
-    TrainingSample(
-        rms = f.rms,
-        peak = f.peak.toDouble(),
-        highRatio = f.highFrequencyRatio,
-        zeroCrossings = f.zeroCrossings.toDouble(),
-        centroid = f.spectralCentroid,
-        flatness = f.spectralFlatness,
-        label = false
-    )
-)
 
         var score = 0
 
