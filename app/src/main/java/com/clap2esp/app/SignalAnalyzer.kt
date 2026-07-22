@@ -4,7 +4,7 @@ import kotlin.math.abs
 import kotlin.math.sqrt
 
 class SignalAnalyzer {
-
+    private var previousSpectrum: DoubleArray? = null
     fun analyze(buffer: ShortArray): SignalFeatures {
 
         var peak = 0
@@ -56,6 +56,20 @@ class SignalAnalyzer {
             FFT.magnitude(buffer)
 
         val sampleRate = 44100.0
+        val spectralFlux =
+    FFT.spectralFlux(
+        previousSpectrum,
+        spectrum
+    )
+
+previousSpectrum =
+    spectrum.copyOf()
+
+val spectralRollOff =
+    FFT.spectralRollOff(
+        spectrum,
+        sampleRate
+    )
 
         var lowEnergy = 0.0
         var midEnergy = 0.0
@@ -109,40 +123,46 @@ class SignalAnalyzer {
 
             peak = peak,
 
-            rms = rms,
+    rms = rms,
 
-            zeroCrossings = zeroCrossings,
+    zeroCrossings = zeroCrossings,
 
-            attack = attackIndex,
+    attack = attackIndex,
 
-            decay = buffer.size - lastStrongIndex,
+    decay = buffer.size - lastStrongIndex,
 
-            impulseWidth = impulseWidth,
+    impulseWidth = impulseWidth,
 
-            highFrequencyRatio = highFrequencyRatio,
+    highFrequencyRatio = highFrequencyRatio,
 
-            clapFrequencyScore = clapFrequencyScore,
+    clapFrequencyScore = clapFrequencyScore,
 
-            lowBandEnergy = lowEnergy,
+    lowBandEnergy = lowEnergy,
 
-            midBandEnergy = midEnergy,
+    midBandEnergy = midEnergy,
 
-            highBandEnergy = highEnergy,
+    highBandEnergy = highEnergy,
 
-            spectralPeak =
-                FFT.spectralPeak(spectrum),
+    spectralPeak =
+        FFT.spectralPeak(spectrum),
 
-            spectralCentroid =
-                FFT.spectralCentroid(
-                    spectrum,
-                    sampleRate
-                ),
+    spectralCentroid =
+        FFT.spectralCentroid(
+            spectrum,
+            sampleRate
+        ),
 
-            spectralFlatness =
-                FFT.spectralFlatness(
-                    spectrum
-                )
-        )
+    spectralFlatness =
+        FFT.spectralFlatness(
+            spectrum
+        ),
+
+    spectralFlux =
+        spectralFlux,
+
+    spectralRollOff =
+        spectralRollOff
+)
     }
 
     private fun calculateClapScore(
