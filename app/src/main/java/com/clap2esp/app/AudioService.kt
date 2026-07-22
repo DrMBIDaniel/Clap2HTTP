@@ -13,6 +13,9 @@ import android.util.Log
 
 class AudioService : Service() {
 
+    private lateinit var settings: SettingsManager
+    private lateinit var httpWorker: HttpWorker
+
     private var audioRecord: AudioRecord? = null
     private var isRecording = false
 
@@ -37,13 +40,19 @@ class AudioService : Service() {
 
     // Пока IP захардкожен.
     // Потом перенесём его в настройки приложения.
-    private val httpWorker =
-        HttpWorker("192.168.1.100")
 
+    httpWorker =
+    HttpWorker(settings)
+    
     private val channelId = "Clap2ESP_Channel"
 
     override fun onCreate() {
         super.onCreate()
+        settings = SettingsManager(this)
+
+httpWorker = HttpWorker(settings)
+
+httpWorker.start()
 
         Logger.log("AudioService created")
 
