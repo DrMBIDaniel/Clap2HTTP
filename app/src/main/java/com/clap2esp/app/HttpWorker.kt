@@ -10,6 +10,13 @@ class HttpWorker(
     @Volatile
     private var running = true
 
+    companion object {
+
+        private const val MAX_RETRIES = 3
+
+        private const val RETRY_DELAY = 500L
+    }
+
     override fun run() {
 
         while (running) {
@@ -32,39 +39,48 @@ class HttpWorker(
 
     private fun send(command: String) {
 
-        try {
+        var attempt = 1
 
-            val url =
-                URL("http://$serverIp/$command")
+        while (attempt <= MAX_RETRIES) {
 
-            val connection =
-                url.openConnection() as HttpURLConnection
+            try {
 
-            connection.requestMethod = "GET"
+                val url =
+                    URL("http://$serverIp/$command")
 
-            connection.connectTimeout = 1500
-            connection.readTimeout = 1500
+                val connection =
+                    url.openConnection() as HttpURLConnection
 
-            val code =
-                connection.responseCode
+                connection.requestMethod = "GET"
 
-            Logger.log(
-                "HTTP $command -> $code"
-            )
+                connection.connectTimeout = 1500
+                connection.readTimeout = 1500
 
-            connection.disconnect()
+                val code =
+                    connection.responseCode
 
-        } catch (e: Exception) {
+                connection.disconnect()
 
-            Logger.log(
-                "HTTP FAILED $command ${e.message}"
-            )
+                Logger.log(
+                    "HTTP $command success ($code)"
+                )
 
-            // Пока просто возвращаем команду обратно
-            // в очередь.
-            HttpQueue.push(command)
+                return
 
-            sleep(500)
+            } catch (e: Exception) {
+
+                Logger.log(
+                    "HTTP retry $attempt/$MAX_RETRIES : ${e.message}"
+                )
+
+                attempt++
+
+                sleep(RETRY_DELAY)
+            }
         }
+
+        Logger.log(
+            "HTTP FAILED after $MAX_RETRIES attempts"
+        )
     }
 }
