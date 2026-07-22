@@ -1,5 +1,7 @@
 package com.clap2esp.app
 
+import kotlin.math.abs
+
 object TrainingManager {
 
     private const val REQUIRED_SAMPLES = 40
@@ -8,24 +10,21 @@ object TrainingManager {
 
     fun add(sample: TrainingSample) {
 
-        if (samples.size >= REQUIRED_SAMPLES)
-            return
-
         samples.add(sample)
 
         Logger.log(
-            "Training sample ${samples.size}/$REQUIRED_SAMPLES"
+            "Training sample ${samples.size}"
         )
     }
 
     fun progress(): Int {
 
-        return samples.size
+        return filteredSamples().size
     }
 
     fun isFinished(): Boolean {
 
-        return samples.size >= REQUIRED_SAMPLES
+        return filteredSamples().size >= REQUIRED_SAMPLES
     }
 
     fun clear() {
@@ -33,27 +32,97 @@ object TrainingManager {
         samples.clear()
     }
 
+    private fun median(values: List<Double>): Double {
+
+        if (values.isEmpty())
+            return 0.0
+
+        val sorted = values.sorted()
+
+        return if (sorted.size % 2 == 0) {
+
+            (
+                sorted[sorted.size / 2] +
+                sorted[sorted.size / 2 - 1]
+            ) / 2.0
+
+        } else {
+
+            sorted[sorted.size / 2]
+        }
+    }
+
+    private fun filteredSamples(): List<TrainingSample> {
+
+        if (samples.size < 10)
+            return samples
+
+        val medianPeak =
+            median(
+                samples.map {
+                    it.peak.toDouble()
+                }
+            )
+
+        return samples.filter {
+
+            abs(
+                it.peak - medianPeak
+            ) <= medianPeak * 0.5
+        }
+    }
+
     fun averagePeak(): Double =
-        samples.map { it.peak }.average()
+        filteredSamples()
+            .map { it.peak }
+            .average()
 
     fun averageRms(): Double =
-        samples.map { it.rms }.average()
+        filteredSamples()
+            .map { it.rms }
+            .average()
 
     fun averageHighRatio(): Double =
-        samples.map { it.highRatio }.average()
+        filteredSamples()
+            .map { it.highRatio }
+            .average()
 
     fun averageFlux(): Double =
-        samples.map { it.spectralFlux }.average()
+        filteredSamples()
+            .map { it.spectralFlux }
+            .average()
 
     fun averageRollOff(): Double =
-        samples.map { it.spectralRollOff }.average()
+        filteredSamples()
+            .map { it.spectralRollOff }
+            .average()
 
     fun averageCentroid(): Double =
-        samples.map { it.spectralCentroid }.average()
+        filteredSamples()
+            .map { it.spectralCentroid }
+            .average()
 
     fun averageWidth(): Double =
-        samples.map { it.impulseWidth }.average()
+        filteredSamples()
+            .map { it.impulseWidth }
+            .average()
 
     fun averageZeroCrossings(): Double =
-        samples.map { it.zeroCrossings }.average()
+        filteredSamples()
+            .map { it.zeroCrossings }
+            .average()
+
+    fun minPeak(): Int =
+        filteredSamples()
+            .minOf { it.peak }
+
+    fun maxPeak(): Int =
+        filteredSamples()
+            .maxOf { it.peak }
+
+    fun recommendedMinPeak(): Int =
+        (averagePeak() * 0.65).toInt()
+
+    fun recommendedMaxPeak(): Int =
+        (averagePeak() * 1.45).toInt()
 }
