@@ -14,15 +14,25 @@ class NoiseEstimator {
 
     private val alpha = 0.03
 
+    private var state =
+        CalibrationState.CALIBRATING
+
     fun update(features: SignalFeatures) {
 
-        if (!initialized) {
+        if (state == CalibrationState.CALIBRATING) {
 
             rms += features.rms
             peak += features.peak
             highRatio += features.highFrequencyRatio
 
             frames++
+
+            if (frames % 20 == 0) {
+
+                Logger.log(
+                    "Calibrating... frame=$frames/$learningFrames"
+                )
+            }
 
             if (frames >= learningFrames) {
 
@@ -31,11 +41,13 @@ class NoiseEstimator {
                 highRatio /= frames
 
                 initialized = true
+                state = CalibrationState.READY
 
                 Logger.log(
-                    "Noise profile initialized " +
-                    "RMS=${rms.toInt()} " +
-                    "Peak=${peak.toInt()}"
+                    "Calibration complete " +
+                            "RMS=${rms.toInt()} " +
+                            "Peak=${peak.toInt()} " +
+                            "HF=$highRatio"
                 )
             }
 
@@ -43,7 +55,7 @@ class NoiseEstimator {
         }
 
         /*
-         * Не обучаемся на явных хлопках.
+         * Не обучаемся на хлопках.
          */
 
         if (
@@ -54,21 +66,25 @@ class NoiseEstimator {
         }
 
         /*
-         * Медленно адаптируемся
-         * к изменению окружающего шума.
+         * Медленная адаптация
+         * к окружающему шуму.
          */
 
         rms =
             rms * (1.0 - alpha) +
-            features.rms * alpha
+                    features.rms * alpha
 
         peak =
             peak * (1.0 - alpha) +
-            features.peak * alpha
+                    features.peak * alpha
 
         highRatio =
             highRatio * (1.0 - alpha) +
-            features.highFrequencyRatio * alpha
+                    features.highFrequencyRatio * alpha
+    }
+
+    fun state(): CalibrationState {
+        return state
     }
 
     fun isInitialized(): Boolean {
