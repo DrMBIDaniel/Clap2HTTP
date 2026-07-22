@@ -4,7 +4,6 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.content.Intent
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
@@ -36,6 +35,11 @@ class AudioService : Service() {
             decisionSmoother
         )
 
+    // Пока IP захардкожен.
+    // Потом перенесём его в настройки приложения.
+    private val httpWorker =
+        HttpWorker("192.168.1.100")
+
     private val channelId = "Clap2ESP_Channel"
 
     override fun onCreate() {
@@ -54,11 +58,13 @@ class AudioService : Service() {
 
         startForeground(1, notification)
 
+        httpWorker.start()
+
         Logger.log("Foreground service started")
     }
 
     override fun onStartCommand(
-        intent: Intent?,
+        intent: android.content.Intent?,
         flags: Int,
         startId: Int
     ): Int {
@@ -114,8 +120,6 @@ class AudioService : Service() {
 
                 noiseEstimator.update(features)
 
-                // Пока идёт калибровка —
-                // хлопки полностью игнорируются.
                 if (
                     noiseEstimator.state() ==
                     CalibrationState.CALIBRATING
@@ -129,9 +133,7 @@ class AudioService : Service() {
 
                         Logger.log("DOUBLE CLAP EVENT")
 
-                        sendBroadcast(
-                            Intent("DOUBLE_CLAP")
-                        )
+                        HttpQueue.push("double")
                     }
 
                     else -> {}
@@ -143,9 +145,7 @@ class AudioService : Service() {
 
                         Logger.log("SINGLE CLAP EVENT")
 
-                        sendBroadcast(
-                            Intent("SINGLE_CLAP")
-                        )
+                        HttpQueue.push("single")
                     }
 
                     else -> {}
@@ -180,6 +180,8 @@ class AudioService : Service() {
 
         isRecording = false
 
+        httpWorker.shutdown()
+
         try {
             audioRecord?.stop()
         } catch (e: Exception) {
@@ -192,7 +194,7 @@ class AudioService : Service() {
         super.onDestroy()
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
+    override fun onBind(intent: android.content.Intent?): IBinder? {
         return null
     }
 }
