@@ -17,24 +17,24 @@ class AudioService : Service() {
     private var audioRecord: AudioRecord? = null
     private var isRecording = false
 
-   private val signalAnalyzer =
-    SignalAnalyzer()
+    private val signalAnalyzer =
+        SignalAnalyzer()
 
-private val noiseEstimator =
-    NoiseEstimator()
+    private val noiseEstimator =
+        NoiseEstimator()
 
-private val adaptiveThreshold =
-    AdaptiveThreshold()
+    private val adaptiveThreshold =
+        AdaptiveThreshold()
 
-private val decisionSmoother =
-    DecisionSmoother()
+    private val decisionSmoother =
+        DecisionSmoother()
 
-private val clapDetector =
-    ClapDetector(
-        noiseEstimator,
-        adaptiveThreshold,
-        decisionSmoother
-    )
+    private val clapDetector =
+        ClapDetector(
+            noiseEstimator,
+            adaptiveThreshold,
+            decisionSmoother
+        )
 
     private val channelId = "Clap2ESP_Channel"
 
@@ -113,6 +113,15 @@ private val clapDetector =
                     signalAnalyzer.analyze(buffer)
 
                 noiseEstimator.update(features)
+
+                // Пока идёт калибровка —
+                // хлопки полностью игнорируются.
+                if (
+                    noiseEstimator.state() ==
+                    CalibrationState.CALIBRATING
+                ) {
+                    continue
+                }
 
                 when (clapDetector.detect(features)) {
 
