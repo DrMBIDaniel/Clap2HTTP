@@ -37,40 +37,33 @@ class AudioService : Service() {
             adaptiveThreshold,
             decisionSmoother
         )
-
-    // Пока IP захардкожен.
-    // Потом перенесём его в настройки приложения.
-
-    httpWorker =
-    HttpWorker(settings)
     
     private val channelId = "Clap2ESP_Channel"
 
-    override fun onCreate() {
-        super.onCreate()
-        settings = SettingsManager(this)
+   override fun onCreate() {
+    super.onCreate()
 
-httpWorker = HttpWorker(settings)
+    settings = SettingsManager(this)
 
-httpWorker.start()
+    httpWorker = HttpWorker(settings)
 
-        Logger.log("AudioService created")
+    Logger.log("AudioService created")
 
-        createNotificationChannel()
+    createNotificationChannel()
 
-        val notification =
-            Notification.Builder(this, channelId)
-                .setContentTitle("Clap2ESP")
-                .setContentText("Listening for claps...")
-                .setSmallIcon(android.R.drawable.ic_menu_info_details)
-                .build()
+    val notification =
+        Notification.Builder(this, channelId)
+            .setContentTitle("Clap2ESP")
+            .setContentText("Listening for claps...")
+            .setSmallIcon(android.R.drawable.ic_menu_info_details)
+            .build()
 
-        startForeground(1, notification)
+    startForeground(1, notification)
 
-        httpWorker.start()
+    httpWorker.start()
 
-        Logger.log("Foreground service started")
-    }
+    Logger.log("Foreground service started")
+}
 
     override fun onStartCommand(
         intent: android.content.Intent?,
