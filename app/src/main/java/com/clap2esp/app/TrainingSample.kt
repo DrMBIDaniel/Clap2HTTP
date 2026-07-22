@@ -19,5 +19,4 @@ data class TrainingSample(
     val spectralFlux: Double,
 
     val spectralRollOff: Double
-
 )
