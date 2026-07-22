@@ -16,14 +16,16 @@ class ClapDetector(
 
     fun detect(features: SignalFeatures): ClapType {
 
-       val score = calculateScore(features)
+        val score = calculateScore(features)
 
-adaptiveThreshold.update(features)
+        adaptiveThreshold.update(features)
 
-val clapDetected =
-    decisionSmoother.update(
-        features.peak > adaptiveThreshold.currentThreshold()
-    )
+        val clapDetected =
+            decisionSmoother.update(
+                score >= 8 &&
+                        features.peak >
+                        adaptiveThreshold.currentThreshold()
+            )
 
         if (!clapDetected) {
             return ClapType.NONE
@@ -95,8 +97,10 @@ val clapDetected =
         if (f.peak > noiseEstimator.noisePeak() * 2.0)
             score++
 
-        if (f.highFrequencyRatio >
-            noiseEstimator.noiseHighRatio() + 0.08)
+        if (
+            f.highFrequencyRatio >
+            noiseEstimator.noiseHighRatio() + 0.08
+        )
             score++
 
         if (f.highBandEnergy > f.lowBandEnergy)
@@ -114,13 +118,19 @@ val clapDetected =
         if (f.clapFrequencyScore > 0.55)
             score++
 
-        if (f.spectralPeak > 1800)
+        if (f.spectralPeak > 0.60)
             score++
 
         if (f.spectralCentroid > 1500)
             score++
 
         if (f.spectralFlatness > 0.15)
+            score++
+
+        if (f.spectralFlux > 0.08)
+            score++
+
+        if (f.spectralRollOff > 2500)
             score++
 
         Logger.log(
