@@ -2,9 +2,7 @@ package com.clap2esp.app
 
 object TrainingManager {
 
-    companion object {
-        private const val REQUIRED_SAMPLES = 40
-    }
+    private const val REQUIRED_SAMPLES = 40
 
     private val samples = mutableListOf<TrainingSample>()
 
@@ -35,43 +33,27 @@ object TrainingManager {
         samples.clear()
     }
 
-    fun averagePeak(): Double {
+    fun averagePeak() =
+        samples.map { it.peak }.average()
 
-        return samples.map { it.peak }.average()
-    }
+    fun averageRms() =
+        samples.map { it.rms }.average()
 
-    fun averageRms(): Double {
+    fun averageHighRatio() =
+        samples.map { it.highRatio }.average()
 
-        return samples.map { it.rms }.average()
-    }
+    fun averageFlux() =
+        samples.map { it.spectralFlux }.average()
 
-    fun averageHighRatio(): Double {
+    fun averageRollOff() =
+        samples.map { it.spectralRollOff }.average()
 
-        return samples.map { it.highRatio }.average()
-    }
+    fun averageCentroid() =
+        samples.map { it.spectralCentroid }.average()
 
-    fun averageFlux(): Double {
+    fun averageWidth() =
+        samples.map { it.impulseWidth }.average()
 
-        return samples.map { it.spectralFlux }.average()
-    }
-
-    fun averageRollOff(): Double {
-
-        return samples.map { it.spectralRollOff }.average()
-    }
-
-    fun averageCentroid(): Double {
-
-        return samples.map { it.spectralCentroid }.average()
-    }
-
-    fun averageWidth(): Double {
-
-        return samples.map { it.impulseWidth }.average()
-    }
-
-    fun averageZeroCrossings(): Double {
-
-        return samples.map { it.zeroCrossings }.average()
-    }
+    fun averageZeroCrossings() =
+        samples.map { it.zeroCrossings }.average()
 }
