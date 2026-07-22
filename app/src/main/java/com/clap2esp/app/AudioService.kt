@@ -15,6 +15,8 @@ class AudioService : Service() {
 
     private lateinit var settings: SettingsManager
     private lateinit var httpWorker: HttpWorker
+    private val trainingManager =
+    TrainingManager()
 
     private var audioRecord: AudioRecord? = null
     private var isRecording = false
@@ -119,6 +121,51 @@ class AudioService : Service() {
 
                 val features =
                     signalAnalyzer.analyze(buffer)
+                    trainingManager.add(
+
+    TrainingSample(
+
+        peak = features.peak,
+
+        rms = features.rms,
+
+        highRatio = features.highFrequencyRatio,
+
+        zeroCrossings = features.zeroCrossings,
+
+        impulseWidth = features.impulseWidth,
+
+        spectralCentroid = features.spectralCentroid,
+
+        spectralFlatness = features.spectralFlatness,
+
+        spectralFlux = features.spectralFlux,
+
+        spectralRollOff = features.spectralRollOff
+    )
+)
+                    if (trainingManager.isFinished()) {
+
+    Logger.log(
+        "Training finished"
+    )
+
+    Logger.log(
+        "Average Peak = ${trainingManager.averagePeak()}"
+    )
+
+    Logger.log(
+        "Average RMS = ${trainingManager.averageRms()}"
+    )
+
+    Logger.log(
+        "Average Flux = ${trainingManager.averageFlux()}"
+    )
+
+    Logger.log(
+        "Average RollOff = ${trainingManager.averageRollOff()}"
+    )
+}
 
                 noiseEstimator.update(features)
 
