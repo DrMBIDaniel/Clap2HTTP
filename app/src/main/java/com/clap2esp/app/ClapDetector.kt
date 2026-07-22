@@ -1,11 +1,9 @@
 package com.clap2esp.app
 
 class ClapDetector(
-
     private val noiseEstimator: NoiseEstimator,
     private val adaptiveThreshold: AdaptiveThreshold,
     private val decisionSmoother: DecisionSmoother
-
 ) {
 
     private var waitingSecondClap = false
@@ -18,7 +16,16 @@ class ClapDetector(
 
     fun detect(features: SignalFeatures): ClapType {
 
-        if (!isClap(features)) {
+        val score = calculateScore(features)
+
+        adaptiveThreshold.update(score)
+
+        val clapDetected =
+            decisionSmoother.update(
+                score >= adaptiveThreshold.currentThreshold()
+            )
+
+        if (!clapDetected) {
             return ClapType.NONE
         }
 
@@ -30,7 +37,9 @@ class ClapDetector(
             pendingSingle = true
             firstClapTime = now
 
-            Logger.log("CLAP")
+            Logger.log(
+                "Candidate score=$score threshold=${adaptiveThreshold.currentThreshold()}"
+            )
 
             return ClapType.NONE
         }
@@ -41,7 +50,6 @@ class ClapDetector(
 
             waitingSecondClap = false
             pendingSingle = false
-            decisionSmoother.clear()
 
             Logger.log("DOUBLE CLAP")
 
@@ -65,7 +73,6 @@ class ClapDetector(
 
             waitingSecondClap = false
             pendingSingle = false
-            decisionSmoother.clear()
 
             Logger.log("SINGLE CLAP")
 
@@ -75,14 +82,14 @@ class ClapDetector(
         return ClapType.NONE
     }
 
-    private fun isClap(f: SignalFeatures): Boolean {
+    private fun calculateScore(f: SignalFeatures): Int {
 
         if (!noiseEstimator.isInitialized())
-            return false
+            return 0
 
         var score = 0
 
-        if (f.rms > noiseEstimator.noiseRms() * 2.0)
+        if (f.rms > noiseEstimator.noiseRms() * 2.2)
             score++
 
         if (f.peak > noiseEstimator.noisePeak() * 2.0)
@@ -90,9 +97,6 @@ class ClapDetector(
 
         if (f.highFrequencyRatio >
             noiseEstimator.noiseHighRatio() + 0.08)
-            score++
-
-        if (f.highBandEnergy > f.midBandEnergy)
             score++
 
         if (f.highBandEnergy > f.lowBandEnergy)
@@ -107,27 +111,22 @@ class ClapDetector(
         if (f.attack < 200)
             score++
 
-        if (f.spectralFlatness > 0.18)
+        if (f.clapFrequencyScore > 0.55)
             score++
 
-        if (f.spectralPeak > 1500)
+        if (f.spectralPeak > 1800)
             score++
 
-        if (f.spectralCentroid > 1200)
+        if (f.spectralCentroid > 1500)
             score++
 
-        adaptiveThreshold.update(score)
-
-        val candidate =
-            score >= adaptiveThreshold.currentThreshold()
-
-        val accepted =
-            decisionSmoother.accept(candidate)
+        if (f.spectralFlatness > 0.15)
+            score++
 
         Logger.log(
-            "Score=$score Threshold=${adaptiveThreshold.currentThreshold()} Accepted=$accepted"
+            "Score=$score Threshold=${adaptiveThreshold.currentThreshold()}"
         )
 
-        return accepted
+        return score
     }
 }
