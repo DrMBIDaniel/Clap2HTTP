@@ -18,14 +18,14 @@ object TrainingManager {
         )
     }
 
-    fun isFinished(): Boolean {
-
-        return samples.size >= REQUIRED_SAMPLES
-    }
-
     fun progress(): Int {
 
         return samples.size
+    }
+
+    fun isFinished(): Boolean {
+
+        return samples.size >= REQUIRED_SAMPLES
     }
 
     fun clear() {
@@ -33,27 +33,28 @@ object TrainingManager {
         samples.clear()
     }
 
-    fun averagePeak() =
+    fun averagePeak(): Double =
         samples.map { it.peak }.average()
 
-    fun averageRms() =
+    fun averageRms(): Double =
         samples.map { it.rms }.average()
 
-    fun averageHighRatio() =
+    fun averageHighRatio(): Double =
         samples.map { it.highRatio }.average()
 
-    fun averageFlux() =
+    fun averageFlux(): Double =
         samples.map { it.spectralFlux }.average()
 
-    fun averageRollOff() =
+    fun averageRollOff(): Double =
         samples.map { it.spectralRollOff }.average()
 
-    fun averageCentroid() =
+    fun averageCentroid(): Double =
         samples.map { it.spectralCentroid }.average()
 
-    fun averageWidth() =
+    fun averageWidth(): Double =
         samples.map { it.impulseWidth }.average()
 
-    fun averageZeroCrossings() =
+    fun averageZeroCrossings(): Double =
         samples.map { it.zeroCrossings }.average()
+
 }
