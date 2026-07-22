@@ -15,8 +15,7 @@ class AudioService : Service() {
 
     private lateinit var settings: SettingsManager
     private lateinit var httpWorker: HttpWorker
-    private val trainingManager =
-    TrainingManager()
+    private val trainingManager = TrainingManager
 
     private var audioRecord: AudioRecord? = null
     private var isRecording = false
