@@ -31,7 +31,6 @@ class HannWindow(
             output[i] =
                 input[i].toDouble() * window[i]
         }
-
         return output
     }
 }
