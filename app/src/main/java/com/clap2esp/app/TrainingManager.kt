@@ -56,5 +56,4 @@ object TrainingManager {
 
     fun averageZeroCrossings(): Double =
         samples.map { it.zeroCrossings }.average()
-
 }
