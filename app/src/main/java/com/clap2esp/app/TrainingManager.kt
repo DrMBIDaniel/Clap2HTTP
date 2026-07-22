@@ -1,6 +1,6 @@
 package com.clap2esp.app
 
-class TrainingManager {
+object TrainingManager {
 
     companion object {
         private const val REQUIRED_SAMPLES = 40
