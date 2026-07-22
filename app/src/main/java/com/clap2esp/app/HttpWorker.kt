@@ -4,7 +4,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 class HttpWorker(
-    private val serverIp: String
+    private val settings: SettingsManager
 ) : Thread() {
 
     @Volatile
@@ -44,6 +44,9 @@ class HttpWorker(
         while (attempt <= MAX_RETRIES) {
 
             try {
+
+                val serverIp =
+    settings.getServerIp()
 
                 val url =
                     URL("http://$serverIp/$command")
