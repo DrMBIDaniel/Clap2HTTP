@@ -1,9 +1,7 @@
 package com.clap2esp.app
 
 import kotlin.math.abs
-import kotlin.math.ln
 import kotlin.math.sqrt
-import kotlin.math.exp
 
 class SignalAnalyzer {
 
@@ -47,9 +45,8 @@ class SignalAnalyzer {
                 attackIndex = i
             }
 
-            if (amplitude > 3000) {
+            if (amplitude > 3000)
                 lastStrongIndex = i
-            }
         }
 
         val rms =
@@ -64,76 +61,33 @@ class SignalAnalyzer {
         var midEnergy = 0.0
         var highEnergy = 0.0
 
-        var totalSpectrumEnergy = 0.0
-
-        var spectralPeak = 0.0
-
-        var centroidNumerator = 0.0
-        var centroidDenominator = 0.0
-
-        var logSum = 0.0
-        var arithmeticSum = 0.0
+        var totalEnergy = 0.0
 
         for (i in spectrum.indices) {
 
             val value = spectrum[i]
 
             val freq =
-                i * sampleRate / buffer.size
+                i * sampleRate / (spectrum.size * 2)
 
-            totalSpectrumEnergy += value
-
-            if (value > spectralPeak)
-                spectralPeak = value
-
-            centroidNumerator +=
-                freq * value
-
-            centroidDenominator +=
-                value
-
-            arithmeticSum += value
-
-            logSum +=
-                ln(value + 1e-12)
+            totalEnergy += value
 
             when {
 
-                freq < 500 -> {
+                freq < 500 ->
                     lowEnergy += value
-                }
 
-                freq < 2000 -> {
+                freq < 2000 ->
                     midEnergy += value
-                }
 
-                else -> {
+                else ->
                     highEnergy += value
-                }
             }
         }
 
         val highFrequencyRatio =
-            if (totalSpectrumEnergy > 0.0)
-                highEnergy / totalSpectrumEnergy
-            else
-                0.0
-
-        val spectralCentroid =
-            if (centroidDenominator > 0.0)
-                centroidNumerator / centroidDenominator
-            else
-                0.0
-
-        val geometricMean =
-            exp(logSum / spectrum.size)
-
-        val arithmeticMean =
-            arithmeticSum / spectrum.size
-
-        val spectralFlatness =
-            if (arithmeticMean > 0.0)
-                geometricMean / arithmeticMean
+            if (totalEnergy > 0.0)
+                highEnergy / totalEnergy
             else
                 0.0
 
@@ -175,11 +129,19 @@ class SignalAnalyzer {
 
             highBandEnergy = highEnergy,
 
-            spectralPeak = spectralPeak,
+            spectralPeak =
+                FFT.spectralPeak(spectrum),
 
-            spectralCentroid = spectralCentroid,
+            spectralCentroid =
+                FFT.spectralCentroid(
+                    spectrum,
+                    sampleRate
+                ),
 
-            spectralFlatness = spectralFlatness
+            spectralFlatness =
+                FFT.spectralFlatness(
+                    spectrum
+                )
         )
     }
 
