@@ -2,6 +2,7 @@ package com.clap2esp.app
 
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.exp
 import kotlin.math.ln
 import kotlin.math.sin
 import kotlin.math.sqrt
@@ -44,12 +45,10 @@ object FFT {
 
             spectrum[i] = value
 
-            if (value > max) {
+            if (value > max)
                 max = value
-            }
         }
 
-        // Нормализация
         if (max > 0.0) {
 
             for (i in spectrum.indices) {
@@ -60,15 +59,16 @@ object FFT {
         return spectrum
     }
 
-    fun spectralPeak(spectrum: DoubleArray): Double {
+    fun spectralPeak(
+        spectrum: DoubleArray
+    ): Double {
 
         var peak = 0.0
 
         for (v in spectrum) {
 
-            if (v > peak) {
+            if (v > peak)
                 peak = v
-            }
         }
 
         return peak
@@ -104,30 +104,88 @@ object FFT {
         spectrum: DoubleArray
     ): Double {
 
-        var geo = 0.0
-        var arith = 0.0
+        var geometric = 0.0
+        var arithmetic = 0.0
 
         for (v in spectrum) {
 
-            geo +=
+            geometric +=
                 ln(v + 1e-12)
 
-            arith +=
+            arithmetic +=
                 v
         }
 
-        geo =
-            kotlin.math.exp(
-                geo / spectrum.size
+        geometric =
+            exp(
+                geometric / spectrum.size
             )
 
-        arith /=
+        arithmetic /=
             spectrum.size
 
-        if (arith == 0.0)
+        if (arithmetic == 0.0)
             return 0.0
 
-        return geo / arith
+        return geometric / arithmetic
+    }
+
+    fun spectralRollOff(
+        spectrum: DoubleArray,
+        sampleRate: Double,
+        percentage: Double = 0.85
+    ): Double {
+
+        var total = 0.0
+
+        for (v in spectrum)
+            total += v
+
+        val target =
+            total * percentage
+
+        var accumulated = 0.0
+
+        for (i in spectrum.indices) {
+
+            accumulated += spectrum[i]
+
+            if (accumulated >= target) {
+
+                return i * sampleRate /
+                        (spectrum.size * 2)
+            }
+        }
+
+        return sampleRate / 2
+    }
+
+    fun spectralFlux(
+        previous: DoubleArray?,
+        current: DoubleArray
+    ): Double {
+
+        if (previous == null)
+            return 0.0
+
+        var flux = 0.0
+
+        val size =
+            minOf(
+                previous.size,
+                current.size
+            )
+
+        for (i in 0 until size) {
+
+            val diff =
+                current[i] - previous[i]
+
+            if (diff > 0.0)
+                flux += diff
+        }
+
+        return flux
     }
 
     private fun fft(
@@ -192,11 +250,11 @@ object FFT {
 
                     val oddReal =
                         real[start + k + len / 2] * wCos -
-                        imag[start + k + len / 2] * wSin
+                                imag[start + k + len / 2] * wSin
 
                     val oddImag =
                         real[start + k + len / 2] * wSin +
-                        imag[start + k + len / 2] * wCos
+                                imag[start + k + len / 2] * wCos
 
                     real[start + k] =
                         evenReal + oddReal
@@ -212,11 +270,11 @@ object FFT {
 
                     val nextCos =
                         wCos * wLenCos -
-                        wSin * wLenSin
+                                wSin * wLenSin
 
                     wSin =
                         wCos * wLenSin +
-                        wSin * wLenCos
+                                wSin * wLenCos
 
                     wCos =
                         nextCos
