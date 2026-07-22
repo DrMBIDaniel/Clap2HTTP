@@ -21,7 +21,7 @@ class ClapDetector(
 adaptiveThreshold.update(features)
 
 val clapDetected =
-    decisionSmoother.accept(
+    decisionSmoother.update(
         features.peak > adaptiveThreshold.currentThreshold()
     )
 
