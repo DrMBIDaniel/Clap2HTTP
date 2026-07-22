@@ -6,18 +6,18 @@ class DecisionSmoother {
 
     private val historySize = 4
 
-    fun accept(candidate: Boolean): Boolean {
+    fun update(candidate: Boolean): Boolean {
 
         history.addLast(candidate)
 
-        if (history.size > historySize) {
+        while (history.size > historySize) {
             history.removeFirst()
         }
 
         var positives = 0
 
-        for (v in history) {
-            if (v) positives++
+        for (value in history) {
+            if (value) positives++
         }
 
         return positives >= 2
