@@ -1,6 +1,29 @@
 package com.clap2esp.app
 
 class ClapDetector(
+
+    private companion object {
+
+    const val RMS_MULTIPLIER = 2.2
+    const val PEAK_MULTIPLIER = 2.0
+
+    const val HIGH_RATIO_OFFSET = 0.08
+
+    const val MIN_ZERO_CROSSINGS = 20
+    const val MAX_IMPULSE_WIDTH = 450
+    const val MAX_ATTACK = 200
+
+    const val MIN_CLAP_SCORE = 0.55
+
+    const val MIN_SPECTRAL_PEAK = 0.60
+    const val MIN_SPECTRAL_CENTROID = 1500.0
+    const val MIN_SPECTRAL_FLATNESS = 0.15
+    const val MIN_SPECTRAL_FLUX = 0.08
+    const val MIN_ROLLOFF = 2500.0
+
+    const val MIN_TOTAL_SCORE = 8
+}
+    
     private val noiseEstimator: NoiseEstimator,
     private val adaptiveThreshold: AdaptiveThreshold,
     private val decisionSmoother: DecisionSmoother
