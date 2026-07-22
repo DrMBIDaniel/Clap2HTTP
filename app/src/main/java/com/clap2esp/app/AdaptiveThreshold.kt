@@ -2,25 +2,34 @@ package com.clap2esp.app
 
 class AdaptiveThreshold {
 
-    private var threshold = 5
+    private var threshold = 7000.0
 
-    fun update(score: Int) {
+    fun update(features: SignalFeatures) {
 
-        when {
+        val target = when {
 
-            score >= 8 -> {
-                threshold++
-            }
+            features.clapFrequencyScore > 0.80 ->
+                features.peak * 1.10
 
-            score <= 3 -> {
-                threshold--
-            }
+            features.clapFrequencyScore > 0.60 ->
+                features.peak * 1.05
+
+            else ->
+                features.peak * 0.98
         }
 
-        threshold = threshold.coerceIn(4, 8)
+        threshold =
+            threshold * 0.97 +
+            target * 0.03
+
+        threshold =
+            threshold.coerceIn(
+                3000.0,
+                30000.0
+            )
     }
 
-    fun currentThreshold(): Int {
+    fun currentThreshold(): Double {
         return threshold
     }
 }
