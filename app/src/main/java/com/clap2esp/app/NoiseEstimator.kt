@@ -4,13 +4,15 @@ class NoiseEstimator {
 
     private var initialized = false
 
-    private var frames = 0
-
     private var rms = 0.0
     private var peak = 0.0
     private var highRatio = 0.0
 
-    private val learningFrames = 80
+    private var frames = 0
+
+    private val calibrationTimeMs = 3000L
+    private val calibrationStart =
+        System.currentTimeMillis()
 
     private val alpha = 0.03
 
@@ -30,11 +32,15 @@ class NoiseEstimator {
             if (frames % 20 == 0) {
 
                 Logger.log(
-                    "Calibrating... frame=$frames/$learningFrames"
+                    "Calibrating... ${
+                        System.currentTimeMillis() - calibrationStart
+                    } ms"
                 )
             }
 
-            if (frames >= learningFrames) {
+            if (
+                System.currentTimeMillis() - calibrationStart >= calibrationTimeMs
+            ) {
 
                 rms /= frames
                 peak /= frames
@@ -44,19 +50,18 @@ class NoiseEstimator {
                 state = CalibrationState.READY
 
                 Logger.log(
-                    "Calibration complete " +
-                            "RMS=${rms.toInt()} " +
-                            "Peak=${peak.toInt()} " +
-                            "HF=$highRatio"
+                    "Calibration complete\n" +
+                    "Frames=$frames\n" +
+                    "Noise RMS=${rms.toInt()}\n" +
+                    "Noise Peak=${peak.toInt()}\n" +
+                    "Noise HF=$highRatio"
                 )
             }
 
             return
         }
 
-        /*
-         * Не обучаемся на хлопках.
-         */
+        // Не обучаемся на хлопках
 
         if (
             features.peak > peak * 3.0 ||
@@ -65,10 +70,7 @@ class NoiseEstimator {
             return
         }
 
-        /*
-         * Медленная адаптация
-         * к окружающему шуму.
-         */
+        // Медленная адаптация окружающего шума
 
         rms =
             rms * (1.0 - alpha) +
