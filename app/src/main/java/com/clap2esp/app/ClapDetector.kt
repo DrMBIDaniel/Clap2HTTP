@@ -3,7 +3,8 @@ package com.clap2esp.app
 class ClapDetector(
     private val noiseEstimator: NoiseEstimator,
     private val adaptiveThreshold: AdaptiveThreshold,
-    private val decisionSmoother: DecisionSmoother
+    private val decisionSmoother: DecisionSmoother,
+    private val settings: SettingsManager
 ) {
 
     private var waitingSecondClap = false
