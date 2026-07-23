@@ -1,12 +1,16 @@
 package com.clap2esp.app
 
-class AdaptiveThreshold {
+import kotlin.math.max
+
+class AdaptiveThreshold(
+    private val settings: SettingsManager? = null
+) {
 
     private var threshold = 7000.0
 
     fun update(features: SignalFeatures) {
 
-        val target = when {
+        val signalTarget = when {
 
             features.clapFrequencyScore > 0.80 ->
                 features.peak * 1.10
@@ -18,9 +22,23 @@ class AdaptiveThreshold {
                 features.peak * 0.98
         }
 
+        val learnedTarget =
+
+            if (
+                settings != null &&
+                settings.isTrained()
+            ) {
+                settings.averagePeak() * 0.75
+            } else {
+                0.0
+            }
+
+        val target =
+            max(signalTarget, learnedTarget)
+
         threshold =
             threshold * 0.97 +
-            target * 0.03
+                    target * 0.03
 
         threshold =
             threshold.coerceIn(
@@ -30,6 +48,7 @@ class AdaptiveThreshold {
     }
 
     fun currentThreshold(): Double {
+
         return threshold
     }
 }
