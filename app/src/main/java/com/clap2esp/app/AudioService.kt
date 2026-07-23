@@ -27,8 +27,7 @@ class AudioService : Service() {
     private val noiseEstimator =
         NoiseEstimator()
 
-    private val adaptiveThreshold =
-        AdaptiveThreshold()
+  private lateinit var adaptiveThreshold: AdaptiveThreshold
 
     private val decisionSmoother =
         DecisionSmoother()
@@ -41,6 +40,9 @@ class AudioService : Service() {
     super.onCreate()
 
     settings = SettingsManager(this)
+
+    adaptiveThreshold =
+    AdaptiveThreshold(settings)
 
     clapDetector = ClapDetector(
     noiseEstimator,
