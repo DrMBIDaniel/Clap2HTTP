@@ -7,16 +7,51 @@ object TrainingManager {
     private const val REQUIRED_SAMPLES = 40
 
     private val samples = mutableListOf<TrainingSample>()
+    private var trainingEnabled = false
+    fun startTraining() {
 
-    fun add(sample: TrainingSample) {
+    samples.clear()
+    trainingEnabled = true
 
-        samples.add(sample)
+    Logger.log("Training started")
+}
 
-        Logger.log(
-            "Training sample ${samples.size}"
-        )
+fun stopTraining() {
+
+    trainingEnabled = false
+
+    Logger.log("Training stopped")
+}
+
+fun isTraining(): Boolean {
+
+    return trainingEnabled
+}
+
+   fun add(sample: TrainingSample) {
+
+    if (!trainingEnabled)
+        return
+
+    samples.add(sample)
+
+    Logger.log(
+        "Training sample ${progress()}/$REQUIRED_SAMPLES"
+    )
+
+    if (isFinished()) {
+
+        trainingEnabled = false
+
+        Logger.log("Training finished")
+
+        Logger.log("Average Peak = ${averagePeak()}")
+
+        Logger.log("Average RMS = ${averageRms()}")
+
+        Logger.log("Recommended Peak = ${recommendedMinPeak()} .. ${recommendedMaxPeak()}")
     }
-
+}
     fun progress(): Int {
 
         return filteredSamples().size
