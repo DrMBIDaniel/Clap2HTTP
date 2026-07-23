@@ -101,4 +101,13 @@ fun clearTraining() {
 
         .apply()
 }
+
+fun peakCenter(): Double =
+    (minPeak() + maxPeak()) / 2.0
+
+fun peakRadius(): Double =
+    (maxPeak() - minPeak()) / 2.0
+
+fun isPeakLearned(): Boolean =
+    isTrained() && maxPeak() > minPeak()
 }
