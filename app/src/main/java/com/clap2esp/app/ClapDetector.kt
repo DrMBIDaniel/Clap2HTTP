@@ -129,11 +129,26 @@ class ClapDetector(
 
             if (settings.isTrained()) {
 
-        val minPeak = settings.minPeak()
-        val maxPeak = settings.maxPeak()
+        if (settings.isPeakLearned()) {
 
-        if (f.peak in minPeak..maxPeak)
+    val center = settings.peakCenter()
+    val radius = settings.peakRadius()
+
+    val distance =
+        kotlin.math.abs(f.peak - center)
+
+    when {
+
+        distance <= radius * 0.25 ->
+            score += 3
+
+        distance <= radius * 0.50 ->
             score += 2
+
+        distance <= radius ->
+            score += 1
+    }
+}
 
         val avgRms = settings.averageRms()
 
