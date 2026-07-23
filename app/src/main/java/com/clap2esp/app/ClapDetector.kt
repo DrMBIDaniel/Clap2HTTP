@@ -152,21 +152,42 @@ class ClapDetector(
 
         val avgRms = settings.averageRms()
 
-        if (
-            f.rms > avgRms * 0.65 &&
-            f.rms < avgRms * 1.45
-        )
-            score += 2
+val rmsDistance =
+    kotlin.math.abs(
+        f.rms - avgRms
+    )
 
-        val avgRatio =
-            settings.averageHighRatio()
+when {
 
-        if (
-            kotlin.math.abs(
-                f.highFrequencyRatio - avgRatio
-            ) < 0.08
-        )
-            score += 2
+    rmsDistance <= avgRms * 0.10 ->
+        score += 3
+
+    rmsDistance <= avgRms * 0.25 ->
+        score += 2
+
+    rmsDistance <= avgRms * 0.45 ->
+        score += 1
+}
+
+      val avgRatio =
+    settings.averageHighRatio()
+
+val ratioDistance =
+    kotlin.math.abs(
+        f.highFrequencyRatio - avgRatio
+    )
+
+when {
+
+    ratioDistance <= 0.03 ->
+        score += 3
+
+    ratioDistance <= 0.06 ->
+        score += 2
+
+    ratioDistance <= 0.10 ->
+        score += 1
+}
     }
 
         if (f.rms > noiseEstimator.noiseRms() * 2.2)
