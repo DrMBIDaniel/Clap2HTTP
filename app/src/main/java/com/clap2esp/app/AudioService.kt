@@ -33,12 +33,7 @@ class AudioService : Service() {
     private val decisionSmoother =
         DecisionSmoother()
 
-    private val clapDetector =
-        ClapDetector(
-            noiseEstimator,
-            adaptiveThreshold,
-            decisionSmoother
-        )
+   private lateinit var clapDetector: ClapDetector
     
     private val channelId = "Clap2ESP_Channel"
 
@@ -46,6 +41,13 @@ class AudioService : Service() {
     super.onCreate()
 
     settings = SettingsManager(this)
+
+    clapDetector = ClapDetector(
+    noiseEstimator,
+    adaptiveThreshold,
+    decisionSmoother,
+    settings
+)
 
     httpWorker = HttpWorker(settings)
 
