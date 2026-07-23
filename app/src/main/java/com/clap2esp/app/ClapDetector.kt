@@ -127,6 +127,33 @@ class ClapDetector(
 
         var score = 0
 
+            if (settings.isTrained()) {
+
+        val minPeak = settings.minPeak()
+        val maxPeak = settings.maxPeak()
+
+        if (f.peak in minPeak..maxPeak)
+            score += 2
+
+        val avgRms = settings.averageRms()
+
+        if (
+            f.rms > avgRms * 0.65 &&
+            f.rms < avgRms * 1.45
+        )
+            score += 2
+
+        val avgRatio =
+            settings.averageHighRatio()
+
+        if (
+            kotlin.math.abs(
+                f.highFrequencyRatio - avgRatio
+            ) < 0.08
+        )
+            score += 2
+    }
+
         if (f.rms > noiseEstimator.noiseRms() * 2.2)
             score++
 
