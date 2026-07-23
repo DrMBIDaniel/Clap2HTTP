@@ -35,8 +35,7 @@ class SettingsManager(
             .putString(KEY_IP, ip)
             .apply()
     }
-}
-   
+
     fun saveTrainingData(
     averagePeak: Double,
     averageRms: Double,
@@ -61,4 +60,45 @@ class SettingsManager(
         .putInt("max_peak", maxPeak)
 
         .apply()
+}
+
+fun isTrained(): Boolean =
+    prefs.getBoolean("trained", false)
+
+fun averagePeak(): Double =
+    prefs.getFloat("avg_peak", 0f).toDouble()
+
+fun averageRms(): Double =
+    prefs.getFloat("avg_rms", 0f).toDouble()
+
+fun averageHighRatio(): Double =
+    prefs.getFloat("avg_ratio", 0f).toDouble()
+
+fun averageFlux(): Double =
+    prefs.getFloat("avg_flux", 0f).toDouble()
+
+fun averageRollOff(): Double =
+    prefs.getFloat("avg_rolloff", 0f).toDouble()
+
+fun minPeak(): Int =
+    prefs.getInt("min_peak", 0)
+
+fun maxPeak(): Int =
+    prefs.getInt("max_peak", 0)
+
+fun clearTraining() {
+
+    prefs.edit()
+
+        .remove("trained")
+        .remove("avg_peak")
+        .remove("avg_rms")
+        .remove("avg_ratio")
+        .remove("avg_flux")
+        .remove("avg_rolloff")
+        .remove("min_peak")
+        .remove("max_peak")
+
+        .apply()
+}
 }
