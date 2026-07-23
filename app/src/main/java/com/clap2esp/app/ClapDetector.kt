@@ -13,6 +13,7 @@ class ClapDetector(
     private val minDoubleDelay = 90L
     private val maxDoubleDelay = 450L
     private val singleTimeout = 550L
+    private var trainingFinishedLogged = false
 
     fun detect(features: SignalFeatures): ClapType {
 
@@ -31,19 +32,39 @@ class ClapDetector(
             return ClapType.NONE
         }
 
-        TrainingManager.add(
-    TrainingSample(
-        peak = features.peak,
-        rms = features.rms,
-        highRatio = features.highFrequencyRatio,
-        zeroCrossings = features.zeroCrossings,
-        impulseWidth = features.impulseWidth,
-        spectralCentroid = features.spectralCentroid,
-        spectralFlatness = features.spectralFlatness,
-        spectralFlux = features.spectralFlux,
-        spectralRollOff = features.spectralRollOff
+        if (!TrainingManager.isFinished()) {
+
+    TrainingManager.add(
+        TrainingSample(
+            peak = features.peak,
+            rms = features.rms,
+            highRatio = features.highFrequencyRatio,
+            zeroCrossings = features.zeroCrossings,
+            impulseWidth = features.impulseWidth,
+            spectralCentroid = features.spectralCentroid,
+            spectralFlatness = features.spectralFlatness,
+            spectralFlux = features.spectralFlux,
+            spectralRollOff = features.spectralRollOff
+        )
     )
-)
+
+    if (
+        TrainingManager.isFinished() &&
+        !trainingFinishedLogged
+    ) {
+
+        trainingFinishedLogged = true
+
+        Logger.log("========== TRAINING COMPLETE ==========")
+        Logger.log("Average Peak = ${TrainingManager.averagePeak()}")
+        Logger.log("Average RMS = ${TrainingManager.averageRms()}")
+        Logger.log("Average Flux = ${TrainingManager.averageFlux()}")
+        Logger.log("Average RollOff = ${TrainingManager.averageRollOff()}")
+
+        Logger.log("Recommended Min Peak = ${TrainingManager.recommendedMinPeak()}")
+        Logger.log("Recommended Max Peak = ${TrainingManager.recommendedMaxPeak()}")
+    }
+}
 
         val now = System.currentTimeMillis()
 
