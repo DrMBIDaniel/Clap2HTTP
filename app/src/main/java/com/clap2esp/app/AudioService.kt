@@ -19,6 +19,7 @@ class AudioService : Service() {
 
     private var audioRecord: AudioRecord? = null
     private var isRecording = false
+    private var trainingSaved = false
 
     private val signalAnalyzer =
         SignalAnalyzer()
@@ -81,6 +82,8 @@ class AudioService : Service() {
 
         if (isRecording) return
 
+        trainingSaved = false
+
         val bufferSize =
             AudioRecord.getMinBufferSize(
                 44100,
@@ -119,7 +122,34 @@ class AudioService : Service() {
                 if (read <= 0) continue
 
                 val features =
-                    signalAnalyzer.analyze(buffer)
+                signalAnalyzer.analyze(buffer)
+
+                if (
+    trainingManager.isFinished() &&
+    !trainingSaved
+) {
+
+    trainingSaved = true
+
+    settings.saveTrainingData(
+
+        trainingManager.averagePeak(),
+
+        trainingManager.averageRms(),
+
+        trainingManager.averageHighRatio(),
+
+        trainingManager.averageFlux(),
+
+        trainingManager.averageRollOff(),
+
+        trainingManager.recommendedMinPeak(),
+
+        trainingManager.recommendedMaxPeak()
+    )
+
+    Logger.log("Training profile saved")
+}
 
                 noiseEstimator.update(features)
 
